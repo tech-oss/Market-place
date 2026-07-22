@@ -1,0 +1,9 @@
+export { Hero } from "./components/hero";
+export { BrandStrip } from "./components/brand-strip";
+export { CategoryGrid } from "./components/category-grid";
+export { FeaturedProducts } from "./components/featured-products";
+export { RecentlyAdded } from "./components/recently-added";
+export { WhyBuy } from "./components/why-buy";
+export { HowItWorks } from "./components/how-it-works";
+export { TopSellers } from "./components/top-sellers";
+export { BecomeSeller } from "./components/become-seller";
