@@ -126,3 +126,64 @@ export interface Review {
   body: string;
   createdAt: string;
 }
+
+/** ---------------------------------------------------------------------------
+ * Dashboard (seller + admin) model
+ * ------------------------------------------------------------------------- */
+
+export type ListingStatus = "active" | "draft" | "out-of-stock" | "pending-review";
+
+export interface SellerListing {
+  id: UUID;
+  title: string;
+  slug: string;
+  sku: string;
+  categorySlug: string;
+  priceCents: number;
+  stock: number;
+  status: ListingStatus;
+  views: number;
+  sold: number;
+  condition: ProductCondition;
+  createdAt: string;
+}
+
+export interface SellerOrder {
+  id: UUID;
+  reference: string;
+  productTitle: string;
+  productId: UUID;
+  buyerName: string;
+  qty: number;
+  totalCents: number;
+  status: OrderStatus;
+  courier?: string;
+  tracking?: string;
+  shippingCents?: number;
+  placedAt: string;
+}
+
+export type WalletTxnType = "sale" | "commission" | "payout" | "refund";
+
+export interface WalletTxn {
+  id: UUID;
+  type: WalletTxnType;
+  description: string;
+  amountCents: number; // positive = credit, negative = debit
+  date: string;
+  status: "completed" | "pending";
+}
+
+/** A pending/processed seller registration reviewed by admin. */
+export interface SellerApplication {
+  id: UUID;
+  businessName: string;
+  ownerName: string;
+  email: string;
+  location: string;
+  businessType: "Dealership" | "Scrapyard" | "Workshop" | "Individual";
+  submittedAt: string;
+  idDocUploaded: boolean;
+  proofOfResidenceUploaded: boolean;
+  status: SellerStatus;
+}

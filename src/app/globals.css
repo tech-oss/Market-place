@@ -138,3 +138,22 @@
     @apply font-sans;
   }
 }
+
+/* Print isolation for inventory labels: only #printable-label is printed. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-label,
+  #printable-label * {
+    visibility: visible;
+  }
+  #printable-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

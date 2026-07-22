@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, MapPin, Package, Store, User } from "lucide-react";
+import { ArrowRight, LayoutDashboard, MapPin, Package, ShieldCheck, Store, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { PartVisual, productKind } from "@/components/shared/part-visual";
@@ -104,6 +104,29 @@ export default function AccountPage() {
                   );
                 })}
               </ul>
+            </section>
+
+            {/* Dashboard access (demo) */}
+            <section>
+              <h2 className="mb-4 text-xl font-bold text-foreground">Dashboards</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Link href="/seller" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand"><LayoutDashboard className="size-5" /></span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">Seller Center</p>
+                    <p className="text-xs text-muted-foreground">Listings, orders, wallet & labels</p>
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <Link href="/admin" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand"><ShieldCheck className="size-5" /></span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">Admin Console</p>
+                    <p className="text-xs text-muted-foreground">Approvals, escrow & commission</p>
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
             </section>
 
             {/* Become a seller */}
