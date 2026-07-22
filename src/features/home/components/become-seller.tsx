@@ -1,8 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CircleDollarSign, Rocket, Users } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Reveal } from "@/components/shared/reveal";
-import { PartImage } from "@/components/shared/part-image";
 
 const PERKS = [
   { icon: Users, label: "Reach more buyers" },
@@ -17,11 +17,12 @@ export function BecomeSeller() {
       <Container>
         <Reveal>
           <div className="relative overflow-hidden rounded-3xl bg-ink">
-            <PartImage
-              seed="become-seller"
+            <Image
+              src="/img/workshop.jpg"
               alt=""
-              dark
-              className="absolute inset-0 size-full opacity-40"
+              fill
+              sizes="100vw"
+              className="object-cover opacity-45"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/90 to-ink/40" />
             <div className="relative grid gap-6 p-8 sm:p-12 lg:max-w-2xl">

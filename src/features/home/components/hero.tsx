@@ -1,16 +1,17 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
+import { useRef } from "react";
 import {
-  RotateCcw,
-  Search,
-  ShieldCheck,
-  Truck,
-  Zap,
-} from "lucide-react";
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type Variants,
+} from "framer-motion";
+import { RotateCcw, Search, ShieldCheck, Truck } from "lucide-react";
 import { Container } from "@/components/shared/container";
-import { PartImage } from "@/components/shared/part-image";
-import { Button } from "@/components/ui/button";
+import { CountUp } from "@/components/shared/count-up";
 import {
   Select,
   SelectContent,
@@ -33,6 +34,9 @@ const MODELS = ["S1000RR", "R1", "CBR 1000RR", "Duke 390", "Panigale V4"];
 const YEARS = Array.from({ length: 12 }, (_, i) => `${2024 - i}`);
 const PART_TYPES = ["All Parts", "Brakes", "Engine", "Exhaust", "Suspension", "Bodywork"];
 
+const SEARCH_BTN =
+  "inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-ink px-8 text-sm font-semibold text-ink-foreground transition-transform hover:bg-neutral-800 active:translate-y-px";
+
 function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
   if (partNumber) {
     return (
@@ -42,9 +46,9 @@ function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
           className="h-12 flex-1 bg-muted"
           aria-label="Part number"
         />
-        <Button size="lg" className="h-12 gap-2 px-8">
+        <button type="button" className={SEARCH_BTN}>
           <Search className="size-4" /> Search
-        </Button>
+        </button>
       </div>
     );
   }
@@ -85,67 +89,94 @@ function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
           {PART_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
         </SelectContent>
       </Select>
-      <Button size="lg" className="col-span-2 h-12 gap-2 lg:col-span-1">
+      <button type="button" className={`${SEARCH_BTN} col-span-2 lg:col-span-1`}>
         <Search className="size-4" /> Search
-      </Button>
+      </button>
     </div>
   );
 }
 
 export function Hero() {
   const reduce = useReducedMotion();
-  const rise = reduce
-    ? {}
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "14%"]);
+
+  const container: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+  };
+  const item: Variants = reduce
+    ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as const },
+        hidden: { opacity: 0, y: 22 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] as const },
+        },
       };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-neutral-50 to-background">
-      <Container className="pt-10 lg:pt-16">
+    <section ref={sectionRef} className="relative overflow-hidden bg-gradient-to-b from-neutral-50 to-background">
+      <Container className="pt-8 lg:pt-14">
         <div className="grid items-center gap-8 lg:grid-cols-2">
-          <motion.div {...rise}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
-              <span className="grid size-4 place-items-center rounded-full bg-brand text-brand-foreground">
-                <Zap className="size-2.5" />
-              </span>
+          <motion.div variants={container} initial="hidden" animate="show">
+            <motion.span
+              variants={item}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold tracking-wide text-foreground shadow-sm"
+            >
+              <span className="size-2 rounded-full bg-brand" />
               TRUSTED BY RIDERS. POWERED BY PARTS.
-            </span>
-            <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            </motion.span>
+            <motion.h1
+              variants={item}
+              className="mt-5 text-4xl font-black leading-[1.03] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+            >
               The right part.
               <br />
               The right ride.
-            </h1>
-            <p className="mt-4 max-w-md text-base text-muted-foreground">
+            </motion.h1>
+            <motion.p variants={item} className="mt-4 max-w-md text-base text-muted-foreground">
               South Africa&rsquo;s most trusted marketplace for new and used
               motorcycle parts.
-            </p>
+            </motion.p>
           </motion.div>
 
           <motion.div
-            {...(reduce ? {} : { initial: { opacity: 0, scale: 0.96 }, animate: { opacity: 1, scale: 1 }, transition: { duration: 0.7, delay: 0.1 } })}
-            className="relative hidden lg:block"
+            initial={reduce ? false : { opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative aspect-[16/10] overflow-hidden rounded-3xl sm:aspect-[2/1] lg:aspect-[4/3]"
           >
-            <PartImage
-              seed="hero-moto"
-              alt="Motorcycle on a mountain road"
-              className="aspect-[4/3] w-full rounded-3xl"
-              dark
-            />
+            <motion.div style={{ y: imageY }} className="absolute inset-0 -top-[7%] h-[114%]">
+              <Image
+                src="/img/hero-motorcycle.jpg"
+                alt="Motorcycle parked on a forest road"
+                fill
+                priority
+                sizes="(min-width:1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </motion.div>
+            <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-black/5" />
           </motion.div>
         </div>
 
         {/* Search panel */}
         <motion.div
-          {...(reduce ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.6, delay: 0.15 } })}
+          initial={reduce ? false : { opacity: 0, y: 26 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 mt-8 rounded-2xl border border-border bg-card p-4 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.35)] sm:p-6"
         >
           <Tabs defaultValue="motorcycle">
             <TabsList className="mb-4 bg-muted">
-              <TabsTrigger value="motorcycle">By Motorcycle</TabsTrigger>
-              <TabsTrigger value="part">By Part Number</TabsTrigger>
+              <TabsTrigger value="motorcycle" className="uppercase tracking-wide">By Motorcycle</TabsTrigger>
+              <TabsTrigger value="part" className="uppercase tracking-wide">By Part Number</TabsTrigger>
             </TabsList>
             <TabsContent value="motorcycle">
               <FitmentSelects />
@@ -176,7 +207,7 @@ export function Hero() {
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink text-center lg:grid-cols-4">
           {platformStats.map((s) => (
             <div key={s.label} className="px-4 py-6">
-              <p className="text-2xl font-black text-white sm:text-3xl">{s.value}</p>
+              <CountUp value={s.value} className="block text-2xl font-black text-white sm:text-3xl" />
               <p className="mt-1 text-xs font-medium uppercase tracking-wide text-white/50">
                 {s.label}
               </p>

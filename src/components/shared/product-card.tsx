@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Heart, MapPin } from "lucide-react";
+import { Heart, MapPin, ScanLine } from "lucide-react";
 import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { PartImage } from "./part-image";
+import { PartVisual, productKind } from "./part-visual";
 import { ConditionBadge } from "./condition-badge";
 
 /** Full product card used in the Featured Products grid (Section 04). */
@@ -17,8 +17,8 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,0.25)]">
       <div className="relative aspect-square p-2">
         <Link href={`/parts/${product.slug}`} aria-label={product.title}>
-          <PartImage
-            seed={product.id}
+          <PartVisual
+            kind={productKind(product)}
             alt={product.images[0]?.alt ?? product.title}
             className="size-full rounded-xl"
           />
@@ -33,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           aria-label="Save to wishlist"
-          className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-white/90 text-neutral-600 shadow-sm backdrop-blur transition-colors hover:text-brand"
+          className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-white/90 text-neutral-600 shadow-sm backdrop-blur transition-all hover:text-brand hover:scale-110 active:scale-95"
         >
           <Heart className="size-4" />
         </button>
@@ -60,9 +60,12 @@ export function ProductCard({ product }: { product: Product }) {
               {product.seller.name}
             </span>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className={cn("size-3")} />
-            {product.seller.location}
+          <span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className={cn("size-3")} />
+              {product.seller.location}
+            </span>
+            <ScanLine className="size-3.5 text-muted-foreground/60" aria-hidden />
           </span>
         </div>
       </div>

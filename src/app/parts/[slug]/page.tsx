@@ -16,6 +16,7 @@ import {
   productReviews,
 } from "@/mocks";
 import { ProductGallery } from "@/features/product/product-gallery";
+import { productKind } from "@/components/shared/part-visual";
 import { BuyBox } from "@/features/product/buy-box";
 
 export function generateStaticParams() {
@@ -79,7 +80,7 @@ export default async function ProductPage({
       <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
         {/* Gallery */}
         <div>
-          <ProductGallery images={product.images} title={product.title} />
+          <ProductGallery images={product.images} title={product.title} kind={productKind(product)} />
         </div>
 
         {/* Summary + buy box */}

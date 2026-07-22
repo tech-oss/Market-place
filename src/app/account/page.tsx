@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, MapPin, Package, Store, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
-import { PartImage } from "@/components/shared/part-image";
+import { PartVisual, productKind } from "@/components/shared/part-visual";
 import { formatZAR } from "@/lib/format";
 import { allProducts } from "@/mocks";
 import type { OrderStatus } from "@/types";
@@ -81,7 +81,7 @@ export default function AccountPage() {
                       key={order.id}
                       className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4"
                     >
-                      <PartImage seed={product.id} alt={product.title} className="size-16 rounded-xl" />
+                      <PartVisual kind={productKind(product)} alt={product.title} className="size-16 rounded-xl" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-muted-foreground">Order {order.id} · {order.date}</p>
                         <Link

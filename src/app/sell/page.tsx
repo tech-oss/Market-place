@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,7 +11,6 @@ import {
   Wallet,
 } from "lucide-react";
 import { Container } from "@/components/shared/container";
-import { PartImage } from "@/components/shared/part-image";
 import { Reveal } from "@/components/shared/reveal";
 
 export const metadata: Metadata = {
@@ -40,7 +40,7 @@ export default function SellPage() {
     <>
       {/* Hero */}
       <section className="relative overflow-hidden bg-ink text-white">
-        <PartImage seed="sell-hero" alt="" dark className="absolute inset-0 size-full opacity-30" />
+        <Image src="/img/workshop.jpg" alt="" fill sizes="100vw" className="object-cover opacity-35" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/90 to-ink/50" />
         <Container className="relative py-16 lg:py-24">
           <div className="max-w-2xl">

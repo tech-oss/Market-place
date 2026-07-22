@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PartImage } from "@/components/shared/part-image";
+import { PartVisual, type PartKind } from "@/components/shared/part-visual";
 import { cn } from "@/lib/utils";
 import type { ProductImage } from "@/types";
 
@@ -9,20 +9,20 @@ import type { ProductImage } from "@/types";
 export function ProductGallery({
   images,
   title,
+  kind,
 }: {
   images: ProductImage[];
   title: string;
+  kind: PartKind;
 }) {
-  // Demo gallery: derive 4 angles from the single mock image.
-  const views = images.length
-    ? [images[0], images[0], images[0], images[0]]
-    : [];
+  // Demo gallery: a single illustration shown across 4 thumbnail slots.
+  const views = images.length ? [0, 1, 2, 3] : [];
   const [active, setActive] = useState(0);
 
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row">
       <div className="flex gap-3 sm:flex-col">
-        {views.map((_, i) => (
+        {views.map((i) => (
           <button
             key={i}
             type="button"
@@ -33,13 +33,13 @@ export function ProductGallery({
               active === i ? "border-brand" : "border-transparent hover:border-input",
             )}
           >
-            <PartImage seed={`${title}-${i}`} alt="" className="size-16" />
+            <PartVisual kind={kind} alt="" className="size-16" />
           </button>
         ))}
       </div>
-      <PartImage
-        seed={`${title}-${active}`}
-        alt={views[active]?.alt ?? title}
+      <PartVisual
+        kind={kind}
+        alt={images[active]?.alt ?? title}
         className="aspect-square flex-1 rounded-2xl border border-border"
       />
     </div>

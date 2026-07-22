@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/types";
 import { conditionLabel, formatZAR, timeAgo } from "@/lib/format";
-import { PartImage } from "./part-image";
+import { PartVisual, productKind } from "./part-visual";
 
 /** Slim card used in the Recently Added strip (Section 05). */
 export function CompactProductCard({ product }: { product: Product }) {
@@ -11,8 +11,8 @@ export function CompactProductCard({ product }: { product: Product }) {
       href={`/parts/${product.slug}`}
       className="group flex flex-col rounded-xl border border-border bg-card p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-md"
     >
-      <PartImage
-        seed={product.id}
+      <PartVisual
+        kind={productKind(product)}
         alt={product.images[0]?.alt ?? product.title}
         className="mb-3 aspect-[4/3] w-full rounded-lg"
       />

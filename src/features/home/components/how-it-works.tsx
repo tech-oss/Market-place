@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
@@ -25,6 +26,9 @@ export function HowItWorks() {
                 </span>
                 <p className="font-semibold text-foreground">{step.title}</p>
                 <p className="text-sm text-muted-foreground">{step.body}</p>
+                {i < STEPS.length - 1 && (
+                  <ChevronRight className="absolute -right-3 top-1/2 hidden size-6 -translate-y-1/2 text-border lg:block" />
+                )}
               </div>
             </Reveal>
           ))}

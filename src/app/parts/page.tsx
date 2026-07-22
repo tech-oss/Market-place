@@ -42,10 +42,10 @@ export default async function PartsPage({
           </div>
 
           <div>
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <MobileFilters />
-                <p className="text-sm text-muted-foreground">
+                <p className="truncate text-sm text-muted-foreground">
                   <span className="font-semibold text-foreground">{products.length}</span>{" "}
                   {products.length === 1 ? "result" : "results"}
                   {params.q && (

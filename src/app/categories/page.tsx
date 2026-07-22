@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
-import { PartImage } from "@/components/shared/part-image";
+import { PartVisual, categoryKind } from "@/components/shared/part-visual";
 import { Reveal } from "@/components/shared/reveal";
 import { categories } from "@/mocks";
 import { formatCount } from "@/lib/format";
@@ -28,8 +28,8 @@ export default function CategoriesPage() {
                 href={`/parts?category=${cat.slug}`}
                 className="group relative block aspect-[4/3] overflow-hidden rounded-xl"
               >
-                <PartImage
-                  seed={cat.slug}
+                <PartVisual
+                  kind={categoryKind(cat.slug)}
                   alt={cat.name}
                   dark
                   className="size-full transition-transform duration-500 group-hover:scale-105"
