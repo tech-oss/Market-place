@@ -2,6 +2,7 @@ import type {
   Category,
   MotorcycleBrand,
   Product,
+  Review,
   Seller,
 } from "@/types";
 
@@ -153,4 +154,123 @@ export const platformStats = [
   { label: "Verified Sellers", value: "468" },
   { label: "Positive Reviews", value: "98.9%" },
   { label: "Secure Payments", value: "100%" },
+];
+
+/** --------------------------------------------------------------------------
+ * Additional catalog inventory (used by /parts browse & detail pages)
+ * ------------------------------------------------------------------------ */
+const moreProducts: Product[] = [
+  {
+    id: "p-6", slug: "front-fairing-kit-suzuki-gsxr750", title: "Front Fairing Kit",
+    priceCents: 420000, condition: "good-used", categorySlug: "bodywork", brandName: "Suzuki",
+    oemNumbers: ["94401-15H00"], fitment: [{ brand: "Suzuki", model: "GSX-R750", yearFrom: 2011, yearTo: 2020 }],
+    images: [{ id: "p-6-i", url: "", alt: "Front Fairing Kit for Suzuki GSX-R750" }],
+    seller: sellerRef(sellers[5]), stock: 1, listedAt: daysAgo(6),
+  },
+  {
+    id: "p-7", slug: "chain-sprocket-kit-honda-cbr600rr", title: "Chain & Sprocket Kit",
+    priceCents: 185000, condition: "new", categorySlug: "engine", brandName: "Honda",
+    oemNumbers: ["06406-MFJ-D00"], fitment: [{ brand: "Honda", model: "CBR 600RR", yearFrom: 2007, yearTo: 2019 }],
+    images: [{ id: "p-7-i", url: "", alt: "Chain & Sprocket Kit for Honda CBR 600RR" }],
+    seller: sellerRef(sellers[0]), stock: 8, listedAt: daysAgo(7), isNew: true,
+  },
+  {
+    id: "p-8", slug: "led-indicator-set-triumph-street-triple", title: "LED Indicator Set",
+    priceCents: 65000, condition: "new", categorySlug: "lighting", brandName: "Triumph",
+    oemNumbers: ["T2700730"], fitment: [{ brand: "Triumph", model: "Street Triple", yearFrom: 2013, yearTo: 2023 }],
+    images: [{ id: "p-8-i", url: "", alt: "LED Indicator Set for Triumph Street Triple" }],
+    seller: sellerRef(sellers[1]), stock: 12, listedAt: daysAgo(8), isNew: true,
+  },
+  {
+    id: "p-9", slug: "rear-sprocket-ktm-1290-super-duke", title: "Rear Sprocket 42T",
+    priceCents: 90000, condition: "excellent-used", categorySlug: "engine", brandName: "KTM",
+    oemNumbers: ["6031005104204"], fitment: [{ brand: "KTM", model: "1290 Super Duke", yearFrom: 2014, yearTo: 2023 }],
+    images: [{ id: "p-9-i", url: "", alt: "Rear Sprocket for KTM 1290 Super Duke" }],
+    seller: sellerRef(sellers[4]), stock: 3, listedAt: daysAgo(9),
+  },
+  {
+    id: "p-10", slug: "fork-seals-yamaha-r6", title: "Fork Seal Kit",
+    priceCents: 45000, condition: "new", categorySlug: "suspension", brandName: "Yamaha",
+    oemNumbers: ["2C0-23145-00"], fitment: [{ brand: "Yamaha", model: "R6", yearFrom: 2006, yearTo: 2020 }],
+    images: [{ id: "p-10-i", url: "", alt: "Fork Seal Kit for Yamaha R6" }],
+    seller: sellerRef(sellers[2]), stock: 20, listedAt: daysAgo(10), isNew: true,
+  },
+  {
+    id: "p-11", slug: "radiator-kawasaki-ninja-650", title: "OEM Radiator",
+    priceCents: 240000, condition: "good-used", categorySlug: "engine", brandName: "Kawasaki",
+    oemNumbers: ["39061-0700"], fitment: [{ brand: "Kawasaki", model: "Ninja 650", yearFrom: 2012, yearTo: 2020 }],
+    images: [{ id: "p-11-i", url: "", alt: "OEM Radiator for Kawasaki Ninja 650" }],
+    seller: sellerRef(sellers[3]), stock: 2, listedAt: daysAgo(11),
+  },
+  {
+    id: "p-12", slug: "handlebar-grips-bmw-rninet", title: "Heated Handlebar Grips",
+    priceCents: 38000, condition: "new", categorySlug: "controls", brandName: "BMW",
+    oemNumbers: ["61312346099"], fitment: [{ brand: "BMW", model: "R nineT", yearFrom: 2014, yearTo: 2023 }],
+    images: [{ id: "p-12-i", url: "", alt: "Heated Handlebar Grips for BMW R nineT" }],
+    seller: sellerRef(sellers[0]), stock: 15, listedAt: daysAgo(12), isNew: true,
+  },
+  {
+    id: "p-13", slug: "rearsets-ducati-monster-821", title: "Adjustable Rearsets",
+    priceCents: 360000, condition: "like-new", categorySlug: "controls", brandName: "Ducati",
+    oemNumbers: ["96280441A"], fitment: [{ brand: "Ducati", model: "Monster 821", yearFrom: 2014, yearTo: 2020 }],
+    images: [{ id: "p-13-i", url: "", alt: "Adjustable Rearsets for Ducati Monster 821" }],
+    seller: sellerRef(sellers[2]), stock: 1, listedAt: daysAgo(13),
+  },
+  {
+    id: "p-14", slug: "battery-suzuki-vstrom-650", title: "AGM Battery YTX12-BS",
+    priceCents: 110000, condition: "new", categorySlug: "electronics", brandName: "Suzuki",
+    oemNumbers: ["33610-06810"], fitment: [{ brand: "Suzuki", model: "V-Strom 650", yearFrom: 2004, yearTo: 2023 }],
+    images: [{ id: "p-14-i", url: "", alt: "AGM Battery for Suzuki V-Strom 650" }],
+    seller: sellerRef(sellers[5]), stock: 6, listedAt: daysAgo(14), isNew: true,
+  },
+  {
+    id: "p-15", slug: "windscreen-bmw-s1000rr", title: "Double-Bubble Windscreen",
+    priceCents: 130000, condition: "used", categorySlug: "bodywork", brandName: "BMW",
+    oemNumbers: ["46637726820"], fitment: [{ brand: "BMW", model: "S1000RR", yearFrom: 2019, yearTo: 2023 }],
+    images: [{ id: "p-15-i", url: "", alt: "Double-Bubble Windscreen for BMW S1000RR" }],
+    seller: sellerRef(sellers[3]), stock: 4, listedAt: daysAgo(15),
+  },
+  {
+    id: "p-16", slug: "brake-pads-honda-africa-twin", title: "Sintered Brake Pads",
+    priceCents: 42000, condition: "new", categorySlug: "brakes", brandName: "Honda",
+    oemNumbers: ["06455-MKK-D01"], fitment: [{ brand: "Honda", model: "Africa Twin", yearFrom: 2016, yearTo: 2023 }],
+    images: [{ id: "p-16-i", url: "", alt: "Sintered Brake Pads for Honda Africa Twin" }],
+    seller: sellerRef(sellers[1]), stock: 30, listedAt: daysAgo(16), isNew: true,
+  },
+];
+
+/** Full catalog: everything a buyer can browse on /parts. */
+export const allProducts: Product[] = [
+  ...featuredProducts,
+  ...recentProducts,
+  ...moreProducts,
+];
+
+export function getProductBySlug(slug: string): Product | undefined {
+  return allProducts.find((p) => p.slug === slug);
+}
+
+export function getProductsBySeller(sellerId: string): Product[] {
+  return allProducts.filter((p) => p.seller.id === sellerId);
+}
+
+export function getSellerBySlug(slug: string): Seller | undefined {
+  return sellers.find((s) => s.slug === slug);
+}
+
+/** Condition filter options for the catalog sidebar. */
+export const conditionOptions: { value: string; label: string }[] = [
+  { value: "new", label: "New" },
+  { value: "like-new", label: "Like New" },
+  { value: "excellent-used", label: "Excellent Used" },
+  { value: "good-used", label: "Good Used" },
+  { value: "used", label: "Used" },
+  { value: "for-parts", label: "For Parts" },
+];
+
+/** Sample product reviews (detail page). */
+export const productReviews: Review[] = [
+  { id: "rv-1", author: "Sipho M.", rating: 5, title: "Exactly as described", body: "Part arrived quickly and fit my bike perfectly. Seller communication was excellent.", createdAt: daysAgo(4) },
+  { id: "rv-2", author: "Danie v.", rating: 5, title: "Great condition used part", body: "Saved a fortune versus buying new. Escrow made me feel safe paying upfront.", createdAt: daysAgo(12) },
+  { id: "rv-3", author: "Thandi K.", rating: 4, title: "Good value", body: "Minor wear as expected for a used item, but works flawlessly. Would buy again.", createdAt: daysAgo(20) },
 ];

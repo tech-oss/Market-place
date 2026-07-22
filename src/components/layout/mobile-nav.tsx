@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, Search } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -10,9 +10,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
 import { PRIMARY_NAV } from "./nav-links";
 import { Logo } from "./logo";
+import { SearchBar } from "./search-bar";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -32,10 +32,7 @@ export function MobileNav() {
         </SheetHeader>
 
         <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search parts, brands, bikes…" className="pl-9" />
-          </div>
+          <SearchBar onSubmitted={() => setOpen(false)} />
         </div>
 
         <nav className="flex flex-col px-2">
