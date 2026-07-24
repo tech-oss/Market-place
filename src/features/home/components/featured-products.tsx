@@ -2,10 +2,11 @@ import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
 import { ProductCard } from "@/components/shared/product-card";
-import { featuredProducts } from "@/mocks";
+import { getFeaturedProducts } from "@/lib/data/products";
 
 /** Section 04 — Featured Products. */
-export function FeaturedProducts() {
+export async function FeaturedProducts() {
+  const featuredProducts = await getFeaturedProducts();
   return (
     <section className="bg-neutral-50 py-12">
       <Container>

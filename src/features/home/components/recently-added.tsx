@@ -2,10 +2,11 @@ import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
 import { CompactProductCard } from "@/components/shared/compact-product-card";
-import { recentProducts } from "@/mocks";
+import { getRecentProducts } from "@/lib/data/products";
 
 /** Section 05 — Recently Added. */
-export function RecentlyAdded() {
+export async function RecentlyAdded() {
+  const recentProducts = await getRecentProducts();
   return (
     <section className="py-12">
       <Container>

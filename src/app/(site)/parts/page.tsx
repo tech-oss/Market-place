@@ -4,7 +4,7 @@ import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProductGrid } from "@/components/shared/product-grid";
 import { EmptyState } from "@/components/shared/empty-state";
-import { allProducts } from "@/mocks";
+import { getCatalogProducts } from "@/lib/data/products";
 import {
   CatalogFilters,
   CatalogSort,
@@ -24,7 +24,8 @@ export default async function PartsPage({
   searchParams: Promise<CatalogParams>;
 }) {
   const params = await searchParams;
-  const products = filterProducts(allProducts, params);
+  const catalog = await getCatalogProducts();
+  const products = filterProducts(catalog, params);
 
   return (
     <>

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PartVisual, productKind } from "@/components/shared/part-visual";
 import { formatZAR } from "@/lib/format";
 import { allProducts } from "@/mocks";
+import { signOut } from "@/features/auth/actions";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = {
@@ -65,6 +66,11 @@ export default function AccountPage() {
                 </span>
               ))}
             </nav>
+            <form action={signOut} className="mt-3 border-t border-border pt-3">
+              <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                Sign out
+              </button>
+            </form>
           </aside>
 
           {/* Main */}

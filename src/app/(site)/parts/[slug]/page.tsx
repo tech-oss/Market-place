@@ -9,12 +9,8 @@ import { StarRating } from "@/components/shared/star-rating";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { ProductGrid } from "@/components/shared/product-grid";
 import { conditionLabel } from "@/lib/format";
-import {
-  allProducts,
-  categories,
-  getProductBySlug,
-  productReviews,
-} from "@/mocks";
+import { allProducts, categories, productReviews } from "@/mocks";
+import { getProductBySlug, getRelatedProducts } from "@/lib/data/products";
 import { ProductGallery } from "@/features/product/product-gallery";
 import { productKind } from "@/components/shared/part-visual";
 import { BuyBox } from "@/features/product/buy-box";
@@ -29,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Part not found" };
   return {
     title: product.title,
@@ -43,13 +39,11 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const category = categories.find((c) => c.slug === product.categorySlug);
-  const related = allProducts
-    .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
-    .slice(0, 4);
+  const related = await getRelatedProducts(product.categorySlug, product.id);
 
   const avgRating =
     productReviews.reduce((s, r) => s + r.rating, 0) / productReviews.length;
