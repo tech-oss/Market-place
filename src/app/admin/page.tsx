@@ -2,13 +2,18 @@ import Link from "next/link";
 import { AlertTriangle, Banknote, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
-import { adminOrders, adminRevenueTrend, adminStats, sellerApplications } from "@/mocks/dashboard";
+import { adminRevenueTrend, adminStats } from "@/mocks/dashboard";
+import { getAdminOrders, getSellerApplications } from "@/lib/data/dashboard";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 
-export default function AdminOverview() {
-  const pending = sellerApplications.filter((a) => a.status === "pending");
+export default async function AdminOverview() {
+  const [adminOrders, applications] = await Promise.all([
+    getAdminOrders(),
+    getSellerApplications(),
+  ]);
+  const pending = applications.filter((a) => a.status === "pending");
 
   return (
     <>

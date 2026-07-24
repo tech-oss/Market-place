@@ -3,16 +3,18 @@ import { Package, Receipt, TrendingUp, Wallet } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
-import {
-  sellerListings,
-  sellerOrders,
-  sellerSalesTrend,
-  walletBalanceCents,
-} from "@/mocks/dashboard";
+import { sellerSalesTrend } from "@/mocks/dashboard";
+import { getSellerListings, getSellerOrders, getWallet } from "@/lib/data/dashboard";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function SellerOverview() {
+export default async function SellerOverview() {
+  const [sellerListings, sellerOrders, wallet] = await Promise.all([
+    getSellerListings(),
+    getSellerOrders(),
+    getWallet(),
+  ]);
+  const walletBalanceCents = wallet.balanceCents;
   const activeListings = sellerListings.filter((l) => l.status === "active").length;
   const inEscrow = sellerOrders.filter((o) => o.status === "paid-held" || o.status === "shipped").length;
   const totalSalesCents = sellerOrders.reduce((s, o) => s + o.totalCents, 0);

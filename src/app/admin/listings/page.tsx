@@ -1,9 +1,10 @@
 import { formatZAR } from "@/lib/format";
 import { PageHeading, SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { conditionLabel } from "@/lib/format";
-import { allProducts } from "@/mocks";
+import { getCatalogProducts } from "@/lib/data/products";
 
-export default function AdminListingsPage() {
+export default async function AdminListingsPage() {
+  const allProducts = await getCatalogProducts();
   return (
     <>
       <PageHeading title="Listings" description="Moderate products listed across the marketplace." />

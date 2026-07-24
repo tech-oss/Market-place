@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/features/cart/cart-context";
+import { placeOrder } from "@/features/cart/actions";
 import { ShoppingCart } from "lucide-react";
 
 const COURIERS = [
@@ -22,9 +23,31 @@ export default function CheckoutPage() {
   const { lines, subtotalCents, clear } = useCart();
   const [courier, setCourier] = useState(COURIERS[0].id);
   const [placed, setPlaced] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const shipping = COURIERS.find((c) => c.id === courier)?.cost ?? 0;
   const total = subtotalCents + shipping;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const res = await placeOrder({
+      lines: lines.map((l) => ({
+        productId: l.product.id,
+        sellerId: l.product.seller.id,
+        title: l.product.title,
+        priceCents: l.product.priceCents,
+        qty: l.qty,
+      })),
+      shippingCents: shipping,
+      courier: COURIERS.find((c) => c.id === courier)?.label ?? courier,
+    });
+    setSubmitting(false);
+    if (res.reference) setReference(res.reference);
+    clear();
+    setPlaced(true);
+  };
 
   if (placed) {
     return (
@@ -32,6 +55,9 @@ export default function CheckoutPage() {
         <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 text-center">
           <CheckCircle2 className="mx-auto size-14 text-emerald-500" />
           <h1 className="mt-4 text-2xl font-black text-foreground">Order placed!</h1>
+          {reference && (
+            <p className="mt-1 text-sm font-semibold text-foreground">Order {reference}</p>
+          )}
           <p className="mt-2 text-sm text-muted-foreground">
             Your payment is held securely in escrow. We&rsquo;ll notify you when the
             seller ships your parts. Release the funds once you&rsquo;ve confirmed delivery.
@@ -61,14 +87,7 @@ export default function CheckoutPage() {
     <Container className="py-10">
       <h1 className="mb-8 text-3xl font-black tracking-tight text-foreground">Checkout</h1>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          clear();
-          setPlaced(true);
-        }}
-        className="grid gap-8 lg:grid-cols-[1fr_360px]"
-      >
+      <form onSubmit={submit} className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">
           {/* Shipping address */}
           <section className="rounded-2xl border border-border bg-card p-5">
@@ -152,8 +171,8 @@ export default function CheckoutPage() {
             <span className="font-semibold text-foreground">Total</span>
             <span className="text-xl font-black text-foreground">{formatZAR(total)}</span>
           </div>
-          <Button type="submit" size="lg" className="mt-5 h-12 w-full">
-            Place Order
+          <Button type="submit" size="lg" className="mt-5 h-12 w-full" disabled={submitting}>
+            {submitting ? "Placing order…" : "Place Order"}
           </Button>
           <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
