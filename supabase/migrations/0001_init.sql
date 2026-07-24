@@ -79,6 +79,10 @@ begin
   )
   on conflict (id) do nothing;
   return new;
+exception when others then
+  -- Never let profile creation abort the auth signup; log and continue.
+  raise warning 'handle_new_user failed for %: %', new.id, sqlerrm;
+  return new;
 end $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
