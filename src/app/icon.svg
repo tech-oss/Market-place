@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#111111"/>
+  <g fill="#6D6E71">
+    <circle cx="33" cy="40" r="8"/>
+    <rect x="30.5" y="22" width="5" height="16"/>
+    <circle cx="33" cy="21" r="4.5"/>
+  </g>
+  <circle cx="33" cy="40" r="3.4" fill="#111111"/>
+  <text x="8" y="46" font-family="'Arial Narrow', 'Oswald', Impact, sans-serif" font-weight="700" font-style="italic" font-size="42" fill="#FFFFFF">M</text>
+  <text x="30" y="46" font-family="'Arial Narrow', 'Oswald', Impact, sans-serif" font-weight="700" font-style="italic" font-size="42" fill="#E30613">P</text>
+</svg>

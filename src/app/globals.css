@@ -51,6 +51,7 @@
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
   --color-ink-muted: var(--ink-muted);
+  --font-condensed: var(--font-condensed);
 }
 
 :root {
