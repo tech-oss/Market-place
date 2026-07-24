@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, FileText, MapPin, X } from "lucide-react";
+import { Check, ExternalLink, FileText, MapPin, X } from "lucide-react";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
-import { setSellerStatus } from "@/features/dashboard/actions";
+import { getKycSignedUrl, setSellerStatus } from "@/features/dashboard/actions";
 import type { SellerApplication, SellerStatus } from "@/types";
 
 const STATUS_TONE: Record<SellerStatus, "amber" | "green" | "red" | "gray"> = {
@@ -14,10 +14,20 @@ const STATUS_LABEL: Record<SellerStatus, string> = {
   pending: "Pending", active: "Approved", rejected: "Rejected", suspended: "Suspended",
 };
 
-function DocPill({ ok, label }: { ok: boolean; label: string }) {
+function DocPill({ ok, label, path }: { ok: boolean; label: string; path?: string | null }) {
+  const view = async () => {
+    if (!path) return;
+    const res = await getKycSignedUrl(path);
+    if (res.url) window.open(res.url, "_blank", "noopener");
+  };
   return (
     <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium ${ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
       <FileText className="size-3" /> {label} {ok ? "✓" : "✗"}
+      {ok && path && path !== "demo" && (
+        <button type="button" onClick={view} className="ml-0.5 inline-flex items-center hover:underline" title="View document">
+          <ExternalLink className="size-3" />
+        </button>
+      )}
     </span>
   );
 }
@@ -51,8 +61,8 @@ export function ApprovalsBoard({ initial, live }: { initial: SellerApplication[]
               <p className="mt-1 text-sm text-muted-foreground">{a.ownerName} · {a.email}</p>
               <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="size-3" /> {a.location}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <DocPill ok={a.idDocUploaded} label="ID Document" />
-                <DocPill ok={a.proofOfResidenceUploaded} label="Proof of Residence" />
+                <DocPill ok={a.idDocUploaded} label="ID Document" path={a.idDocPath} />
+                <DocPill ok={a.proofOfResidenceUploaded} label="Proof of Residence" path={a.proofPath} />
               </div>
             </div>
 

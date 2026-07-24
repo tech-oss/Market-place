@@ -24,7 +24,13 @@ export interface CurrentSeller {
   location: string | null;
   status: string;
   verified: boolean;
+  business_type: string | null;
+  id_doc_url: string | null;
+  proof_of_residence_url: string | null;
 }
+
+const SELLER_COLS =
+  "id,name,slug,logo,location,status,verified,business_type,id_doc_url,proof_of_residence_url";
 
 /**
  * Resolve the seller row for the signed-in seller, creating one on first
@@ -40,7 +46,7 @@ export async function getCurrentSeller(): Promise<CurrentSeller | null> {
 
   const { data: existing } = await supabase
     .from("sellers")
-    .select("id,name,slug,logo,location,status,verified")
+    .select(SELLER_COLS)
     .eq("profile_id", user.id)
     .maybeSingle();
   if (existing) return existing as CurrentSeller;
@@ -65,7 +71,7 @@ export async function getCurrentSeller(): Promise<CurrentSeller | null> {
       logo: base.slice(0, 2).toUpperCase(),
       status: "pending",
     })
-    .select("id,name,slug,logo,location,status,verified")
+    .select(SELLER_COLS)
     .single();
 
   return (created as CurrentSeller) ?? null;
@@ -156,7 +162,8 @@ export async function getSellerApplications(): Promise<SellerApplication[]> {
       email: p?.email ?? "—", location: s.location ?? "—",
       businessType: (s.business_type ?? "Individual"),
       submittedAt: s.created_at, idDocUploaded: !!s.id_doc_url,
-      proofOfResidenceUploaded: !!s.proof_of_residence_url, status: s.status,
+      proofOfResidenceUploaded: !!s.proof_of_residence_url,
+      idDocPath: s.id_doc_url, proofPath: s.proof_of_residence_url, status: s.status,
     } as SellerApplication;
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */

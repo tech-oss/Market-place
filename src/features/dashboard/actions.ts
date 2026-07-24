@@ -116,6 +116,53 @@ export async function markOrderShipped(
   return { ok: true };
 }
 
+/** Seller: update business profile details. */
+export async function updateSellerProfile(input: {
+  name: string;
+  businessType: string;
+  location: string;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found." };
+  const { error } = await supabase
+    .from("sellers")
+    .update({ name: input.name, business_type: input.businessType, location: input.location })
+    .eq("id", seller.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/seller/profile");
+  return { ok: true };
+}
+
+/** Seller: record an uploaded KYC document path on the seller row. */
+export async function setKycDocPath(
+  kind: "id" | "proof",
+  path: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found." };
+  const column = kind === "id" ? "id_doc_url" : "proof_of_residence_url";
+  const { error } = await supabase.from("sellers").update({ [column]: path }).eq("id", seller.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/seller/profile");
+  revalidatePath("/admin/sellers");
+  return { ok: true };
+}
+
+/** Admin: get a short-lived signed URL to view a private KYC document. */
+export async function getKycSignedUrl(path: string): Promise<{ url?: string; error?: string }> {
+  const supabase = await createClient();
+  if (!supabase) return { error: "Not connected." };
+  const { data, error } = await supabase.storage
+    .from("kyc-documents")
+    .createSignedUrl(path, 60);
+  if (error) return { error: error.message };
+  return { url: data.signedUrl };
+}
+
 /** Admin: release escrow (→ released) or refund (→ refunded). */
 export async function settleOrder(
   orderId: string,

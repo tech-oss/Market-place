@@ -185,5 +185,8 @@ export interface SellerApplication {
   submittedAt: string;
   idDocUploaded: boolean;
   proofOfResidenceUploaded: boolean;
+  /** Storage paths (present when uploaded) so admins can view the files. */
+  idDocPath?: string | null;
+  proofPath?: string | null;
   status: SellerStatus;
 }
