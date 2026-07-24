@@ -163,18 +163,47 @@ export async function getKycSignedUrl(path: string): Promise<{ url?: string; err
   return { url: data.signedUrl };
 }
 
-/** Admin: release escrow (→ released) or refund (→ refunded). */
+/**
+ * Admin: release escrow (→ released, credits seller wallet minus commission)
+ * or refund (→ refunded). Idempotent — already-settled orders are skipped.
+ */
 export async function settleOrder(
   orderId: string,
   outcome: "released" | "refunded",
 ): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: outcome })
-    .eq("id", orderId);
+
+  const { data: order } = await supabase
+    .from("orders").select("reference,status").eq("id", orderId).single();
+  if (!order) return { ok: false, error: "Order not found." };
+  if (order.status === "released" || order.status === "refunded") return { ok: true };
+
+  if (outcome === "released") {
+    const { data: setting } = await supabase
+      .from("commission_settings").select("pct").eq("id", 1).maybeSingle();
+    const pct = setting?.pct != null ? Number(setting.pct) : 7;
+
+    const { data: items } = await supabase
+      .from("order_items").select("seller_id,title,price_cents,qty").eq("order_id", orderId);
+
+    const txns: Array<Record<string, unknown>> = [];
+    for (const it of items ?? []) {
+      if (!it.seller_id) continue;
+      const sale = it.price_cents * it.qty;
+      const commission = Math.round(sale * (pct / 100));
+      txns.push({ seller_id: it.seller_id, type: "sale", description: `Order ${order.reference} · ${it.title}`, amount_cents: sale, status: "completed" });
+      txns.push({ seller_id: it.seller_id, type: "commission", description: `Platform commission (${pct}%)`, amount_cents: -commission, status: "completed" });
+    }
+    if (txns.length) {
+      const { error: txErr } = await supabase.from("wallet_transactions").insert(txns);
+      if (txErr) return { ok: false, error: txErr.message };
+    }
+  }
+
+  const { error } = await supabase.from("orders").update({ status: outcome }).eq("id", orderId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/orders");
+  revalidatePath("/seller/wallet");
   return { ok: true };
 }

@@ -141,7 +141,22 @@ export async function getWallet(): Promise<{
     status: t.status === "pending" ? "pending" : "completed",
   }));
   const balanceCents = txns.filter((t) => t.status === "completed").reduce((s, t) => s + t.amountCents, 0);
-  const pendingCents = txns.filter((t) => t.status === "pending").reduce((s, t) => s + Math.max(t.amountCents, 0), 0);
+
+  // Pending = value of this seller's items on orders still held in escrow.
+  const { data: held } = await supabase
+    .from("order_items")
+    .select("price_cents,qty,orders(status)")
+    .eq("seller_id", seller.id);
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const ESCROW = ["paid-held", "shipped", "delivered", "confirmed"];
+  const pendingCents = (held ?? [])
+    .filter((r: any) => {
+      const o = Array.isArray(r.orders) ? r.orders[0] : r.orders;
+      return o && ESCROW.includes(o.status);
+    })
+    .reduce((s: number, r: any) => s + r.price_cents * r.qty, 0);
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
   return { balanceCents, pendingCents, txns };
 }
 
