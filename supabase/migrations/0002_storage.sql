@@ -8,6 +8,13 @@ insert into storage.buckets (id, name, public)
 values ('kyc-documents', 'kyc-documents', false)
 on conflict (id) do nothing;
 
+-- Drop first so this file is safe to re-run.
+drop policy if exists "product images public read" on storage.objects;
+drop policy if exists "product images auth write"  on storage.objects;
+drop policy if exists "product images auth update" on storage.objects;
+drop policy if exists "kyc owner read"  on storage.objects;
+drop policy if exists "kyc owner write" on storage.objects;
+
 -- product-images: anyone can read; authenticated users can upload/manage.
 create policy "product images public read" on storage.objects
   for select using (bucket_id = 'product-images');

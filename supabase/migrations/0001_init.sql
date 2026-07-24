@@ -268,6 +268,33 @@ alter table wallet_transactions enable row level security;
 alter table reviews             enable row level security;
 alter table commission_settings enable row level security;
 
+-- Drop existing policies first so this file is safe to re-run.
+drop policy if exists "profiles self read"     on profiles;
+drop policy if exists "profiles self update"   on profiles;
+drop policy if exists "brands public read"     on brands;
+drop policy if exists "brands admin write"     on brands;
+drop policy if exists "categories public read" on categories;
+drop policy if exists "categories admin write" on categories;
+drop policy if exists "sellers public read"    on sellers;
+drop policy if exists "sellers owner update"   on sellers;
+drop policy if exists "sellers insert self"    on sellers;
+drop policy if exists "sellers admin all"      on sellers;
+drop policy if exists "products public read"   on products;
+drop policy if exists "products seller write"  on products;
+drop policy if exists "product_images read"    on product_images;
+drop policy if exists "product_images write"   on product_images;
+drop policy if exists "fitments read"          on fitments;
+drop policy if exists "fitments write"         on fitments;
+drop policy if exists "orders buyer read"      on orders;
+drop policy if exists "orders buyer insert"    on orders;
+drop policy if exists "orders admin update"    on orders;
+drop policy if exists "order_items read"       on order_items;
+drop policy if exists "wallet seller read"     on wallet_transactions;
+drop policy if exists "reviews public read"    on reviews;
+drop policy if exists "reviews auth insert"    on reviews;
+drop policy if exists "commission public read" on commission_settings;
+drop policy if exists "commission admin update" on commission_settings;
+
 -- profiles
 create policy "profiles self read"   on profiles for select using (auth.uid() = id or is_admin());
 create policy "profiles self update" on profiles for update using (auth.uid() = id);
