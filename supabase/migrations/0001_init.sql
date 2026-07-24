@@ -60,20 +60,22 @@ create table if not exists profiles (
 
 -- security-definer helper to check admin without RLS recursion
 create or replace function is_admin()
-returns boolean language sql security definer stable as $$
+returns boolean language sql security definer stable
+set search_path = public as $$
   select exists (select 1 from profiles where id = auth.uid() and role = 'admin');
 $$;
 
 -- create a profile automatically for every new auth user
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public as $$
 begin
   insert into public.profiles (id, email, full_name, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'buyer')
+    coalesce((new.raw_user_meta_data->>'role')::public.user_role, 'buyer')
   )
   on conflict (id) do nothing;
   return new;
