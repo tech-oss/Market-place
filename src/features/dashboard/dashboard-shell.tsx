@@ -5,14 +5,17 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MessagesNotifier } from "@/components/layout/messages-notifier";
 import { DASH_META } from "./nav";
 
 export function DashboardShell({
   role,
   children,
+  messagesUnread = 0,
 }: {
   role: "seller" | "admin";
   children: React.ReactNode;
+  messagesUnread?: number;
 }) {
   const meta = DASH_META[role];
   const pathname = usePathname();
@@ -51,6 +54,11 @@ export function DashboardShell({
           >
             <item.icon className="size-4" />
             {item.label}
+            {item.href.endsWith("/messages") && messagesUnread > 0 && (
+              <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-brand-foreground">
+                {messagesUnread}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
@@ -113,6 +121,8 @@ export function DashboardShell({
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
+      {role === "seller" && <MessagesNotifier initialUnread={messagesUnread} />}
     </div>
   );
 }

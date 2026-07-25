@@ -9,6 +9,26 @@ export interface ConversationView {
   productSlug: string | null;
   otherParty: string;
   lastMessageAt: string;
+  unread: number;
+}
+
+/** Map of conversationId → unread count for the current user. */
+export async function getUnreadMap(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  if (!supabase) return {};
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+  const { data } = await supabase.rpc("my_unread");
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { conversation_id: string; unread: number }[]) {
+    map[row.conversation_id] = Number(row.unread);
+  }
+  return map;
+}
+
+export async function getUnreadTotal(): Promise<number> {
+  const map = await getUnreadMap();
+  return Object.values(map).reduce((a, b) => a + b, 0);
 }
 
 export interface MessageView {
@@ -48,6 +68,7 @@ export async function listConversations(scope: ChatScope): Promise<ConversationV
   // seller + admin rely on RLS to scope rows (seller sees own, admin sees all).
 
   const { data } = await query;
+  const unreadMap = scope === "admin" ? {} : await getUnreadMap();
   return (data ?? []).map((c: any) => {
     const buyer = Array.isArray(c.buyer) ? c.buyer[0] : c.buyer;
     const seller = Array.isArray(c.seller) ? c.seller[0] : c.seller;
@@ -57,7 +78,7 @@ export async function listConversations(scope: ChatScope): Promise<ConversationV
       scope === "buyer" ? sellerName : scope === "seller" ? buyerName : `${buyerName} ↔ ${sellerName}`;
     return {
       id: c.id, productTitle: c.product_title, productSlug: c.product_slug,
-      otherParty, lastMessageAt: c.last_message_at,
+      otherParty, lastMessageAt: c.last_message_at, unread: unreadMap[c.id] ?? 0,
     };
   });
 }

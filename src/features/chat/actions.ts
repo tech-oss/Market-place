@@ -57,6 +57,27 @@ export async function contactSeller(formData: FormData): Promise<void> {
   redirect(`/messages/${conversationId}`);
 }
 
+/** Mark a conversation read for the current user (called when a thread opens). */
+export async function markConversationRead(conversationId: string): Promise<void> {
+  const supabase = await createClient();
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: convo } = await supabase
+    .from("conversations").select("buyer_id").eq("id", conversationId).maybeSingle();
+  if (!convo) return;
+
+  const column = convo.buyer_id === user.id ? "buyer_last_read_at" : "seller_last_read_at";
+  await supabase.from("conversations").update({ [column]: new Date().toISOString() }).eq("id", conversationId);
+}
+
+/** Poll target for the live notifier — total unread for the current user. */
+export async function getUnreadTotalAction(): Promise<number> {
+  const { getUnreadTotal } = await import("@/lib/data/chat");
+  return getUnreadTotal();
+}
+
 export interface SendResult {
   ok: boolean;
   blocked?: boolean;

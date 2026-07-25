@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/format";
 import type { ConversationView } from "@/lib/data/chat";
 
@@ -33,12 +34,23 @@ export function ConversationList({
               {c.otherParty.slice(0, 2).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-foreground">{c.otherParty}</p>
-              <p className="truncate text-sm text-muted-foreground">{c.productTitle ?? "General enquiry"}</p>
+              <p className={cn("truncate text-foreground", c.unread > 0 ? "font-bold" : "font-semibold")}>
+                {c.otherParty}
+              </p>
+              <p className={cn("truncate text-sm", c.unread > 0 ? "font-medium text-foreground" : "text-muted-foreground")}>
+                {c.productTitle ?? "General enquiry"}
+              </p>
             </div>
-            <span className="shrink-0 text-xs text-muted-foreground" suppressHydrationWarning>
-              {timeAgo(c.lastMessageAt)}
-            </span>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className="text-xs text-muted-foreground" suppressHydrationWarning>
+                {timeAgo(c.lastMessageAt)}
+              </span>
+              {c.unread > 0 && (
+                <span className="grid min-w-5 place-items-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-brand-foreground">
+                  {c.unread}
+                </span>
+              )}
+            </div>
           </Link>
         </li>
       ))}

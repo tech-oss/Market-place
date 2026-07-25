@@ -2,15 +2,18 @@ import Link from "next/link";
 import { Heart, MessageSquare, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { getSessionUser } from "@/lib/auth";
+import { getUnreadTotal } from "@/lib/data/chat";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { CartButton } from "./cart-button";
 import { SearchBar } from "./search-bar";
+import { MessagesNotifier } from "./messages-notifier";
 import { PRIMARY_NAV } from "./nav-links";
 
 /** Sticky top navigation — Section header of the mock. */
 export async function Header() {
   const user = await getSessionUser();
+  const unread = user ? await getUnreadTotal() : 0;
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
       <Container className="flex h-16 items-center gap-4 lg:gap-8">
@@ -35,10 +38,15 @@ export async function Header() {
             <>
               <Link
                 href="/messages"
-                aria-label="Messages"
-                className="hidden size-9 place-items-center rounded-md text-foreground transition-colors hover:bg-muted sm:grid"
+                aria-label={`Messages${unread ? `, ${unread} unread` : ""}`}
+                className="relative hidden size-9 place-items-center rounded-md text-foreground transition-colors hover:bg-muted sm:grid"
               >
                 <MessageSquare className="size-5" />
+                {unread > 0 && (
+                  <span className="absolute right-0.5 top-0.5 grid min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">
+                    {unread}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/account"
@@ -76,6 +84,7 @@ export async function Header() {
           <MobileNav />
         </div>
       </Container>
+      {user && <MessagesNotifier initialUnread={unread} />}
     </header>
   );
 }
