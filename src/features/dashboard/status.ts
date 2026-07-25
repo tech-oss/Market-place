@@ -19,4 +19,5 @@ export const LISTING_STATUS_META: Record<ListingStatus, { label: string; tone: T
   draft: { label: "Draft", tone: "gray" },
   "out-of-stock": { label: "Out of Stock", tone: "red" },
   "pending-review": { label: "Pending Review", tone: "amber" },
+  "awaiting-verification": { label: "Awaiting Verification", tone: "amber" },
 };

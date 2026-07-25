@@ -26,7 +26,10 @@ export default function CheckoutPage() {
   const [reference, setReference] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const shipping = COURIERS.find((c) => c.id === courier)?.cost ?? 0;
+  // Seller-set shipping (per product) takes precedence; else the courier flat rate.
+  const sellerShipping = lines.reduce((s, l) => s + (l.product.shippingCents ?? 0), 0);
+  const courierCost = COURIERS.find((c) => c.id === courier)?.cost ?? 0;
+  const shipping = sellerShipping > 0 ? sellerShipping : courierCost;
   const total = subtotalCents + shipping;
 
   const submit = async (e: React.FormEvent) => {

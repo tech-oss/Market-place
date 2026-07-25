@@ -108,6 +108,9 @@ export interface Product {
   images: ProductImage[];
   seller: Pick<Seller, "id" | "name" | "slug" | "location" | "logo" | "rating">;
   stock: number;
+  /** Seller-set shipping (nationwide) and optional local rate, in cents. */
+  shippingCents?: number;
+  shippingLocalCents?: number;
   /** ISO timestamp used for "Recently Added". */
   listedAt: string;
   isFeatured?: boolean;
@@ -131,7 +134,12 @@ export interface Review {
  * Dashboard (seller + admin) model
  * ------------------------------------------------------------------------- */
 
-export type ListingStatus = "active" | "draft" | "out-of-stock" | "pending-review";
+export type ListingStatus =
+  | "active"
+  | "draft"
+  | "out-of-stock"
+  | "pending-review"
+  | "awaiting-verification";
 
 export interface SellerListing {
   id: UUID;
@@ -145,6 +153,8 @@ export interface SellerListing {
   views: number;
   sold: number;
   condition: ProductCondition;
+  shippingCents?: number;
+  shippingLocalCents?: number;
   createdAt: string;
 }
 

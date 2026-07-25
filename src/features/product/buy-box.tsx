@@ -98,7 +98,9 @@ export function BuyBox({ product }: { product: Product }) {
         </p>
         <p className="flex items-center gap-2 text-muted-foreground">
           <Truck className="size-4 text-brand" />
-          Shipping calculated by the seller at checkout.
+          {product.shippingCents
+            ? <>Shipping {formatZAR(product.shippingCents)} nationwide{product.shippingLocalCents ? <> · {formatZAR(product.shippingLocalCents)} local</> : null}.</>
+            : "Shipping calculated by the seller at checkout."}
         </p>
       </div>
     </div>

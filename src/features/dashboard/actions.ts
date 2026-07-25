@@ -13,29 +13,43 @@ export interface ActionResult {
 
 const NOT_CONNECTED = { ok: true, fellBack: true } as const;
 
-/** Seller: create a new product listing (status → pending review). */
-export async function createListing(input: {
+export interface CreateListingInput {
   title: string;
   categorySlug: string;
   condition: string;
   priceCents: number;
   stock: number;
+  sku?: string;
   oem?: string;
   bin?: string;
   brand?: string;
   model?: string;
   yearFrom?: number;
   yearTo?: number;
-}): Promise<ActionResult> {
+  shippingCents?: number;
+  shippingLocalCents?: number;
+  imageUrls?: string[];
+}
+
+/**
+ * Seller: create a listing. If the seller isn't yet verified (approved by an
+ * admin), the listing is held in "awaiting-verification" and auto-activates
+ * when the admin approves the seller.
+ */
+export async function createListing(input: CreateListingInput): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
   const seller = await getCurrentSeller();
   if (!seller) return { ok: false, error: "No seller account found for this user." };
 
+  const status = seller.status === "active" ? "active" : "awaiting-verification";
+
   const slug =
     input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") +
     "-" + Math.random().toString(36).slice(2, 6);
-  const sku = `MP-${input.categorySlug.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const sku =
+    input.sku?.trim() ||
+    `MP-${input.categorySlug.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const { data: product, error } = await supabase
     .from("products")
@@ -51,7 +65,9 @@ export async function createListing(input: {
       oem_numbers: input.oem ? [input.oem] : [],
       inventory_bin: input.bin || null,
       stock: input.stock,
-      status: "pending-review",
+      shipping_cents: input.shippingCents ?? 0,
+      shipping_local_cents: input.shippingLocalCents ?? null,
+      status,
     })
     .select("id")
     .single();
@@ -63,6 +79,12 @@ export async function createListing(input: {
       product_id: product.id, brand: input.brand, model: input.model,
       year_from: input.yearFrom, year_to: input.yearTo,
     });
+  }
+
+  if (input.imageUrls?.length) {
+    await supabase.from("product_images").insert(
+      input.imageUrls.map((url, i) => ({ product_id: product.id, url, alt: input.title, position: i })),
+    );
   }
 
   revalidatePath("/seller/listings");
@@ -82,7 +104,19 @@ export async function setSellerStatus(
     .update({ status, verified: status === "active" })
     .eq("id", sellerId);
   if (error) return { ok: false, error: error.message };
+
+  // On approval, auto-activate the seller's held listings.
+  if (status === "active") {
+    await supabase
+      .from("products")
+      .update({ status: "active" })
+      .eq("seller_id", sellerId)
+      .in("status", ["awaiting-verification", "pending-review"]);
+  }
+
   revalidatePath("/admin/sellers");
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
   return { ok: true };
 }
 

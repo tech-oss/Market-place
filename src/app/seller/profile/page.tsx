@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Clock, Store } from "lucide-react";
+import { ArrowRight, BadgeCheck, Clock, ShieldCheck, Store } from "lucide-react";
 import { PageHeading, SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { SellerProfileForm } from "@/features/dashboard/seller-profile-form";
 import { KycUpload } from "@/features/dashboard/kyc-upload";
@@ -7,7 +7,12 @@ import { getCurrentSeller } from "@/lib/data/dashboard";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { currentSeller as demoSeller } from "@/mocks/dashboard";
 
-export default async function SellerProfilePage() {
+export default async function SellerProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
+  const { welcome } = await searchParams;
   const seller = await getCurrentSeller();
   const live = isSupabaseConfigured() && Boolean(seller);
 
@@ -29,6 +34,26 @@ export default async function SellerProfilePage() {
   return (
     <>
       <PageHeading title="Business Profile" description="Your storefront details and verification status." />
+
+      {welcome && !isActive && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-brand/20 bg-brand/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand">
+              <ShieldCheck className="size-5" />
+            </span>
+            <div>
+              <p className="font-semibold text-foreground">Verify your business to start selling</p>
+              <p className="text-sm text-muted-foreground">
+                Upload your <strong>ID</strong> and <strong>proof of residence</strong> below. You can list
+                parts now, but they only go live once an admin approves your documents.
+              </p>
+            </div>
+          </div>
+          <Link href="/seller" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+            Skip for now <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <SellerProfileForm

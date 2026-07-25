@@ -84,7 +84,7 @@ export async function getSellerListings(): Promise<SellerListing[]> {
 
   const { data } = await supabase
     .from("products")
-    .select("id,title,slug,sku,category_slug,price_cents,stock,status,views,sold,condition,created_at")
+    .select("id,title,slug,sku,category_slug,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at")
     .eq("seller_id", seller.id)
     .order("created_at", { ascending: false });
 
@@ -92,7 +92,10 @@ export async function getSellerListings(): Promise<SellerListing[]> {
   return data.map((p) => ({
     id: p.id, title: p.title, slug: p.slug, sku: p.sku, categorySlug: p.category_slug,
     priceCents: p.price_cents, stock: p.stock, status: p.status, views: p.views,
-    sold: p.sold, condition: p.condition, createdAt: p.created_at,
+    sold: p.sold, condition: p.condition,
+    shippingCents: p.shipping_cents ?? undefined,
+    shippingLocalCents: p.shipping_local_cents ?? undefined,
+    createdAt: p.created_at,
   }));
 }
 

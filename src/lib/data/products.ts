@@ -13,7 +13,7 @@ import type { Product } from "@/types";
  */
 
 const SELECT =
-  "id, slug, title, price_cents, compare_at_cents, condition, category_slug, brand_name, oem_numbers, stock, status, is_featured, is_new, listed_at, product_images(id,url,alt,position), fitments(brand,model,year_from,year_to), seller:sellers(id,name,slug,location,logo,rating)";
+  "id, slug, title, price_cents, compare_at_cents, condition, category_slug, brand_name, oem_numbers, stock, status, is_featured, is_new, listed_at, shipping_cents, shipping_local_cents, product_images(id,url,alt,position), fitments(brand,model,year_from,year_to), seller:sellers(id,name,slug,location,logo,rating)";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mapRow(r: any): Product {
@@ -45,6 +45,8 @@ function mapRow(r: any): Product {
       rating: seller?.rating ?? 0,
     },
     stock: r.stock,
+    shippingCents: r.shipping_cents ?? undefined,
+    shippingLocalCents: r.shipping_local_cents ?? undefined,
     listedAt: r.listed_at,
     isFeatured: r.is_featured,
     isNew: r.is_new,

@@ -43,7 +43,8 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect(role === "seller" ? "/seller" : "/account");
+  // New sellers land on verification (upload ID + proof of residence); they may skip.
+  redirect(role === "seller" ? "/seller/profile?welcome=1" : "/account");
 }
 
 export async function signOut(): Promise<void> {
