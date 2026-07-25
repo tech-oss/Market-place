@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, User } from "lucide-react";
+import { Heart, MessageSquare, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { getSessionUser } from "@/lib/auth";
 import { Logo } from "./logo";
@@ -32,13 +32,22 @@ export async function Header() {
 
         <div className="ml-auto flex items-center gap-1 md:ml-0">
           {user ? (
-            <Link
-              href="/account"
-              aria-label="Account"
-              className="hidden size-9 place-items-center rounded-full bg-ink text-xs font-bold text-white transition-opacity hover:opacity-90 sm:grid"
-            >
-              {(user.fullName || user.email || "U").charAt(0).toUpperCase()}
-            </Link>
+            <>
+              <Link
+                href="/messages"
+                aria-label="Messages"
+                className="hidden size-9 place-items-center rounded-md text-foreground transition-colors hover:bg-muted sm:grid"
+              >
+                <MessageSquare className="size-5" />
+              </Link>
+              <Link
+                href="/account"
+                aria-label="Account"
+                className="hidden size-9 place-items-center rounded-full bg-ink text-xs font-bold text-white transition-opacity hover:opacity-90 sm:grid"
+              >
+                {(user.fullName || user.email || "U").charAt(0).toUpperCase()}
+              </Link>
+            </>
           ) : (
             <>
               <Link

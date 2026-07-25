@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, MapPin, Star } from "lucide-react";
+import { BadgeCheck, MapPin, MessageSquare, Star } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ConditionBadge } from "@/components/shared/condition-badge";
@@ -14,6 +14,7 @@ import { getProductBySlug, getRelatedProducts } from "@/lib/data/products";
 import { ProductGallery } from "@/features/product/product-gallery";
 import { productKind } from "@/components/shared/part-visual";
 import { BuyBox } from "@/features/product/buy-box";
+import { contactSeller } from "@/features/chat/actions";
 
 export function generateStaticParams() {
   return allProducts.map((p) => ({ slug: p.slug }));
@@ -127,6 +128,19 @@ export default async function ProductPage({
             </div>
             <span className="text-sm font-semibold text-brand">Visit store</span>
           </Link>
+
+          {/* Contact seller */}
+          <form action={contactSeller}>
+            <input type="hidden" name="productId" value={product.id} />
+            <input type="hidden" name="slug" value={product.slug} />
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3.5 text-sm font-semibold text-foreground transition-colors hover:border-neutral-300 hover:bg-muted"
+            >
+              <MessageSquare className="size-4 text-brand" />
+              Message seller about this part
+            </button>
+          </form>
         </div>
       </div>
 
