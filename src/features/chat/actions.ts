@@ -106,8 +106,7 @@ export async function contactSeller(formData: FormData): Promise<void> {
   const result = await resolveConversation(supabase, user.id, productId);
   if (result.kind === "self") redirect("/seller/listings");
   if (result.kind === "ok") redirect(`/messages/${result.id}`);
-  // TEMP diagnostic: surface the reason in the URL. Remove once root-caused.
-  redirect(`/parts/${slug}?contact=error&reason=${encodeURIComponent(result.reason ?? "")}`);
+  redirect(`/parts/${slug}?contact=error`);
 }
 
 /** Mark a conversation read for the current user (called when a thread opens). */
@@ -151,16 +150,20 @@ export async function sendMessage(conversationId: string, rawBody: string): Prom
   const { blocked, reasons } = moderateMessage(body);
   const deliverable = blocked ? BLOCKED_PLACEHOLDER : body;
 
-  const { data: message, error } = await supabase
+  // Client-generated id: sidesteps INSERT ... RETURNING, which requires the
+  // new row to also pass the table's SELECT policy in the same statement —
+  // that check goes through the same security-definer is_convo_participant()
+  // used for conversations, which we found doesn't reliably see a row
+  // inserted earlier in the same statement.
+  const messageId = crypto.randomUUID();
+  const { error } = await supabase
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: user.id, body: deliverable, blocked })
-    .select("id")
-    .single();
+    .insert({ id: messageId, conversation_id: conversationId, sender_id: user.id, body: deliverable, blocked });
   if (error) return { ok: false, error: error.message };
 
   if (blocked) {
     await supabase.from("message_flags").insert({
-      message_id: message.id, original_body: body, reasons,
+      message_id: messageId, original_body: body, reasons,
     });
   }
 
