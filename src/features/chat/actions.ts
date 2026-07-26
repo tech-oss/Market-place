@@ -7,46 +7,41 @@ import { moderateMessage, BLOCKED_PLACEHOLDER } from "./moderation";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** True for Next.js's internal redirect()/notFound() control-flow "errors" — must always rethrow these. */
-function isNextControlFlowError(err: unknown): boolean {
-  const digest = (err as { digest?: string } | undefined)?.digest;
-  return typeof digest === "string" && (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND"));
-}
+type ConversationResult =
+  | { kind: "self" }
+  | { kind: "ok"; id: string }
+  | { kind: "fail" };
 
-/** Product-page "Contact seller": get-or-create a thread, then open it. */
-export async function contactSeller(formData: FormData): Promise<void> {
-  const productId = String(formData.get("productId") ?? "");
-  const slug = String(formData.get("slug") ?? "");
-
+/**
+ * Look up (or create) the conversation for this product/buyer, without ever
+ * calling redirect() itself — redirect() throws internally as Next.js's
+ * control-flow signal, so it must never be called inside a try/catch that
+ * might mistake that throw for a real error and swallow it.
+ */
+async function resolveConversation(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  productId: string,
+): Promise<ConversationResult> {
   try {
-    const supabase = await createClient();
-    if (!supabase) redirect("/login");
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect(`/login?next=${encodeURIComponent(`/parts/${slug}`)}`);
-
-    // Demo/mock listings don't have a real seller to message — bail out
-    // deterministically instead of sending a mock id into a uuid column.
-    if (!UUID.test(productId)) redirect(`/parts/${slug}?contact=unavailable`);
-
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("id, title, slug, seller_id, seller:sellers(profile_id)")
       .eq("id", productId)
       .maybeSingle();
-    if (productError || !product) redirect(`/parts/${slug}?contact=unavailable`);
+    if (productError || !product) return { kind: "fail" };
 
     const sellerProfile = Array.isArray((product as any).seller)
       ? (product as any).seller[0]?.profile_id
       : (product as any).seller?.profile_id;
     // Don't let a seller open a chat with themselves.
-    if (sellerProfile && sellerProfile === user!.id) redirect("/seller/listings");
+    if (sellerProfile && sellerProfile === userId) return { kind: "self" };
 
     const { data: existing } = await supabase
       .from("conversations")
       .select("id")
       .eq("product_id", product.id)
-      .eq("buyer_id", user!.id)
+      .eq("buyer_id", userId)
       .eq("seller_id", product.seller_id)
       .maybeSingle();
 
@@ -58,21 +53,41 @@ export async function contactSeller(formData: FormData): Promise<void> {
           product_id: product.id,
           product_title: product.title,
           product_slug: product.slug,
-          buyer_id: user!.id,
+          buyer_id: userId,
           seller_id: product.seller_id,
         })
         .select("id")
         .single();
-      if (createError) redirect(`/parts/${slug}?contact=error`);
-      conversationId = created?.id;
+      if (createError || !created) return { kind: "fail" };
+      conversationId = created.id;
     }
+    if (!conversationId) return { kind: "fail" };
 
-    if (!conversationId) redirect(`/parts/${slug}?contact=error`);
-    redirect(`/messages/${conversationId}`);
-  } catch (err) {
-    if (isNextControlFlowError(err)) throw err;
-    redirect(`/parts/${slug}?contact=error`);
+    return { kind: "ok", id: conversationId };
+  } catch {
+    return { kind: "fail" };
   }
+}
+
+/** Product-page "Contact seller": get-or-create a thread, then open it. */
+export async function contactSeller(formData: FormData): Promise<void> {
+  const productId = String(formData.get("productId") ?? "");
+  const slug = String(formData.get("slug") ?? "");
+
+  const supabase = await createClient();
+  if (!supabase) redirect("/login");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/parts/${slug}`)}`);
+
+  // Demo/mock listings don't have a real seller to message — bail out
+  // deterministically instead of sending a mock id into a uuid column.
+  if (!UUID.test(productId)) redirect(`/parts/${slug}?contact=unavailable`);
+
+  const result = await resolveConversation(supabase, user.id, productId);
+  if (result.kind === "self") redirect("/seller/listings");
+  if (result.kind === "ok") redirect(`/messages/${result.id}`);
+  redirect(`/parts/${slug}?contact=error`);
 }
 
 /** Mark a conversation read for the current user (called when a thread opens). */
