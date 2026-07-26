@@ -2,28 +2,38 @@ import Link from "next/link";
 import { AlertTriangle, Banknote, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
-import { adminRevenueTrend, adminStats } from "@/mocks/dashboard";
-import { getAdminOrders, getSellerApplications } from "@/lib/data/dashboard";
+import { adminRevenueTrend } from "@/mocks/dashboard";
+import { getActiveSellerCount, getAdminOrders, getCommissionPct, getSellerApplications } from "@/lib/data/dashboard";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default async function AdminOverview() {
-  const [adminOrders, applications] = await Promise.all([
+  const [adminOrders, applications, activeSellers, commissionPct] = await Promise.all([
     getAdminOrders(),
     getSellerApplications(),
+    getActiveSellerCount(),
+    getCommissionPct(),
   ]);
   const pending = applications.filter((a) => a.status === "pending");
+  const held = adminOrders.filter((o) => o.escrow === "held");
+
+  const cutoff = Date.now() - THIRTY_DAYS_MS;
+  const gmvCents = adminOrders
+    .filter((o) => new Date(o.date).getTime() >= cutoff)
+    .reduce((s, o) => s + o.totalCents, 0);
+  const commissionCents = Math.round(gmvCents * (commissionPct / 100));
 
   return (
     <>
       <PageHeading title="Overview" description="Platform health at a glance." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="GMV (30d)" value={formatZAR(adminStats.gmvCents)} icon={TrendingUp} trend={{ value: "9.1%", up: true }} />
-        <StatCard label="Commission Earned" value={formatZAR(adminStats.commissionCents)} icon={Banknote} trend={{ value: "7% flat", up: true }} />
-        <StatCard label="Active Sellers" value={String(adminStats.activeSellers)} icon={Users} />
-        <StatCard label="Pending Approvals" value={String(adminStats.pendingApprovals)} icon={ShieldCheck} />
+        <StatCard label="GMV (30d)" value={formatZAR(gmvCents)} icon={TrendingUp} />
+        <StatCard label="Commission Earned" value={formatZAR(commissionCents)} icon={Banknote} trend={{ value: `${commissionPct}% flat`, up: true }} />
+        <StatCard label="Active Sellers" value={String(activeSellers)} icon={Users} />
+        <StatCard label="Pending Approvals" value={String(pending.length)} icon={ShieldCheck} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -51,10 +61,10 @@ export default async function AdminOverview() {
         <div className="rounded-2xl border border-border bg-white p-5 lg:col-span-1">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertTriangle className="size-5" />
-            <p className="font-bold text-foreground">{adminStats.disputes} open disputes</p>
+            <p className="font-bold text-foreground">{held.length} orders in escrow</p>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {adminStats.ordersInEscrow} orders currently holding funds in escrow.
+            {formatZAR(held.reduce((s, o) => s + o.totalCents, 0))} currently held, awaiting delivery confirmation.
           </p>
           <Link href="/admin/orders" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
             Manage escrow →

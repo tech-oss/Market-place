@@ -1,32 +1,15 @@
 import { PageHeading, SectionCard, StatusPill } from "@/features/dashboard/ui";
-import { sellers } from "@/mocks";
+import { getAdminUsers } from "@/lib/data/dashboard";
 
-interface UserRow {
-  name: string;
-  email: string;
-  role: "Buyer" | "Seller";
-  joined: string;
-  status: "Active" | "Suspended";
-}
+const STATUS_TONE: Record<string, "green" | "amber" | "red" | "gray"> = {
+  active: "green",
+  pending: "amber",
+  rejected: "red",
+  suspended: "red",
+};
 
-const BUYERS: UserRow[] = [
-  { name: "Sipho Mahlangu", email: "sipho.m@gmail.com", role: "Buyer", joined: "2025-11-02", status: "Active" },
-  { name: "Danie van Wyk", email: "danie.vw@gmail.com", role: "Buyer", joined: "2026-01-18", status: "Active" },
-  { name: "Thandi Khumalo", email: "thandi.k@gmail.com", role: "Buyer", joined: "2026-03-09", status: "Active" },
-  { name: "Ayesha Bhana", email: "ayesha.b@gmail.com", role: "Buyer", joined: "2026-05-22", status: "Suspended" },
-];
-
-export default function AdminUsersPage() {
-  const rows: UserRow[] = [
-    ...sellers.map((s) => ({
-      name: s.name,
-      email: `${s.slug}@sellers.co.za`,
-      role: "Seller" as const,
-      joined: s.memberSince,
-      status: "Active" as const,
-    })),
-    ...BUYERS,
-  ];
+export default async function AdminUsersPage() {
+  const rows = await getAdminUsers();
 
   return (
     <>
@@ -45,18 +28,21 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {rows.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+              )}
               {rows.map((u) => (
-                <tr key={u.email} className="hover:bg-neutral-50">
+                <tr key={u.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-3 font-medium text-foreground">{u.name}</td>
                   <td className="px-5 py-3 text-muted-foreground">{u.email}</td>
                   <td className="px-5 py-3">
-                    <StatusPill label={u.role} tone={u.role === "Seller" ? "indigo" : "gray"} />
+                    <StatusPill label={u.role} tone={u.role === "seller" ? "indigo" : "gray"} />
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">
                     {new Date(u.joined).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" })}
                   </td>
                   <td className="px-5 py-3">
-                    <StatusPill label={u.status} tone={u.status === "Active" ? "green" : "red"} />
+                    <StatusPill label={u.status} tone={STATUS_TONE[u.status] ?? "gray"} />
                   </td>
                 </tr>
               ))}

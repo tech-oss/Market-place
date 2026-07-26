@@ -5,56 +5,74 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { moderateMessage, BLOCKED_PLACEHOLDER } from "./moderation";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True for Next.js's internal redirect()/notFound() control-flow "errors" — must always rethrow these. */
+function isNextControlFlowError(err: unknown): boolean {
+  const digest = (err as { digest?: string } | undefined)?.digest;
+  return typeof digest === "string" && (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND"));
+}
+
 /** Product-page "Contact seller": get-or-create a thread, then open it. */
 export async function contactSeller(formData: FormData): Promise<void> {
   const productId = String(formData.get("productId") ?? "");
   const slug = String(formData.get("slug") ?? "");
 
-  const supabase = await createClient();
-  if (!supabase) redirect("/login");
+  try {
+    const supabase = await createClient();
+    if (!supabase) redirect("/login");
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/parts/${slug}`)}`);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect(`/login?next=${encodeURIComponent(`/parts/${slug}`)}`);
 
-  const { data: product } = await supabase
-    .from("products")
-    .select("id, title, slug, seller_id, seller:sellers(profile_id)")
-    .eq("id", productId)
-    .maybeSingle();
-  if (!product) redirect(`/parts/${slug}`);
+    // Demo/mock listings don't have a real seller to message — bail out
+    // deterministically instead of sending a mock id into a uuid column.
+    if (!UUID.test(productId)) redirect(`/parts/${slug}?contact=unavailable`);
 
-  const sellerProfile = Array.isArray((product as any).seller)
-    ? (product as any).seller[0]?.profile_id
-    : (product as any).seller?.profile_id;
-  // Don't let a seller open a chat with themselves.
-  if (sellerProfile && sellerProfile === user!.id) redirect("/seller/listings");
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("id, title, slug, seller_id, seller:sellers(profile_id)")
+      .eq("id", productId)
+      .maybeSingle();
+    if (productError || !product) redirect(`/parts/${slug}?contact=unavailable`);
 
-  const { data: existing } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("product_id", product.id)
-    .eq("buyer_id", user!.id)
-    .eq("seller_id", product.seller_id)
-    .maybeSingle();
+    const sellerProfile = Array.isArray((product as any).seller)
+      ? (product as any).seller[0]?.profile_id
+      : (product as any).seller?.profile_id;
+    // Don't let a seller open a chat with themselves.
+    if (sellerProfile && sellerProfile === user!.id) redirect("/seller/listings");
 
-  let conversationId = existing?.id as string | undefined;
-  if (!conversationId) {
-    const { data: created } = await supabase
+    const { data: existing } = await supabase
       .from("conversations")
-      .insert({
-        product_id: product.id,
-        product_title: product.title,
-        product_slug: product.slug,
-        buyer_id: user!.id,
-        seller_id: product.seller_id,
-      })
       .select("id")
-      .single();
-    conversationId = created?.id;
-  }
+      .eq("product_id", product.id)
+      .eq("buyer_id", user!.id)
+      .eq("seller_id", product.seller_id)
+      .maybeSingle();
 
-  if (!conversationId) redirect(`/parts/${slug}`);
-  redirect(`/messages/${conversationId}`);
+    let conversationId = existing?.id as string | undefined;
+    if (!conversationId) {
+      const { data: created, error: createError } = await supabase
+        .from("conversations")
+        .insert({
+          product_id: product.id,
+          product_title: product.title,
+          product_slug: product.slug,
+          buyer_id: user!.id,
+          seller_id: product.seller_id,
+        })
+        .select("id")
+        .single();
+      if (createError) redirect(`/parts/${slug}?contact=error`);
+      conversationId = created?.id;
+    }
+
+    if (!conversationId) redirect(`/parts/${slug}?contact=error`);
+    redirect(`/messages/${conversationId}`);
+  } catch (err) {
+    if (isNextControlFlowError(err)) throw err;
+    redirect(`/parts/${slug}?contact=error`);
+  }
 }
 
 /** Mark a conversation read for the current user (called when a thread opens). */

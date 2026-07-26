@@ -26,8 +26,14 @@ export function EscrowBoard({
     if (live) { const res = await settleOrder(id, outcome); if (res.ok && !res.fellBack) router.refresh(); }
   };
 
+  const held = orders.filter((o) => o.escrow === "held");
+  const heldValue = held.reduce((s, o) => s + o.totalCents, 0);
+
   return (
     <SectionCard>
+      <p className="border-b border-border px-5 py-3 text-sm text-muted-foreground">
+        {formatZAR(heldValue)} currently held across {held.length} order{held.length === 1 ? "" : "s"}.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead>

@@ -132,6 +132,19 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
   return { ok: true };
 }
 
+/** Admin: unpublish a listing (moderation "Remove"). Sets it back to draft
+ *  rather than deleting, so the seller can see and fix it. */
+export async function removeListing(productId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("products").update({ status: "draft" }).eq("id", productId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/listings");
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
 /** Admin: approve or reject a seller. */
 export async function setSellerStatus(
   sellerId: string,

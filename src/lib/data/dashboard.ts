@@ -221,6 +221,99 @@ const ESCROW_FROM_STATUS = (status: string): "held" | "released" | "refunded" =>
       ? "refunded"
       : "held";
 
+export interface AdminListingView {
+  id: string;
+  title: string;
+  brandName: string;
+  sellerName: string;
+  condition: string;
+  priceCents: number;
+  status: string;
+}
+
+/** Admin: every listing regardless of status, for moderation. */
+export async function getAdminListings(): Promise<AdminListingView[]> {
+  const supabase = await createClient();
+  const toMock = async () => {
+    const { allProducts } = await import("@/mocks");
+    return allProducts.map((p) => ({
+      id: p.id, title: p.title, brandName: p.brandName, sellerName: p.seller.name,
+      condition: p.condition, priceCents: p.priceCents, status: "active",
+    }));
+  };
+  if (!supabase) return toMock();
+
+  const { data } = await supabase
+    .from("products")
+    .select("id, title, brand_name, condition, price_cents, status, sellers(name)")
+    .order("created_at", { ascending: false });
+  if (!data?.length) return toMock();
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return data.map((p: any) => {
+    const sellerObj = Array.isArray(p.sellers) ? p.sellers[0] : p.sellers;
+    return {
+      id: p.id, title: p.title, brandName: p.brand_name ?? "—",
+      sellerName: sellerObj?.name ?? "—", condition: p.condition,
+      priceCents: p.price_cents, status: p.status,
+    };
+  });
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+export interface AdminUserView {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  joined: string;
+  status: string;
+}
+
+/** Admin: every buyer + seller account on the platform. */
+export async function getAdminUsers(): Promise<AdminUserView[]> {
+  const supabase = await createClient();
+  const toMock = async () => {
+    const { sellers } = await import("@/mocks");
+    return sellers.map((s) => ({
+      id: s.id, name: s.name, email: `${s.slug}@sellers.co.za`,
+      role: "seller", joined: s.memberSince, status: "active",
+    }));
+  };
+  if (!supabase) return toMock();
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role, created_at")
+    .order("created_at", { ascending: false });
+  if (!profiles?.length) return toMock();
+
+  const { data: sellerRows } = await supabase.from("sellers").select("profile_id, status");
+  const sellerStatusByProfile = new Map((sellerRows ?? []).map((s) => [s.profile_id, s.status]));
+
+  return profiles
+    .filter((p) => p.role !== "admin")
+    .map((p) => ({
+      id: p.id,
+      name: p.full_name || "—",
+      email: p.email || "—",
+      role: p.role,
+      joined: p.created_at,
+      status: p.role === "seller" ? (sellerStatusByProfile.get(p.id) ?? "pending") : "active",
+    }));
+}
+
+/** Admin: count of currently-active sellers. */
+export async function getActiveSellerCount(): Promise<number> {
+  const supabase = await createClient();
+  if (!supabase) return 468;
+  const { count } = await supabase
+    .from("sellers")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+  return count ?? 0;
+}
+
 export async function getAdminOrders(): Promise<AdminOrderView[]> {
   const supabase = await createClient();
   if (!supabase) {

@@ -36,10 +36,13 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ contact?: string }>;
 }) {
   const { slug } = await params;
+  const { contact } = await searchParams;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
@@ -141,6 +144,16 @@ export default async function ProductPage({
               Message seller about this part
             </button>
           </form>
+          {contact === "unavailable" && (
+            <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+              Messaging isn&rsquo;t available for this demo listing.
+            </p>
+          )}
+          {contact === "error" && (
+            <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+              Something went wrong starting that conversation. Please try again.
+            </p>
+          )}
         </div>
       </div>
 

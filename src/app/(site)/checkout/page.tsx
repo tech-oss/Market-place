@@ -25,6 +25,12 @@ export default function CheckoutPage() {
   const [placed, setPlaced] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
 
   // Seller-set shipping (per product) takes precedence; else the courier flat rate.
   const sellerShipping = lines.reduce((s, l) => s + (l.product.shippingCents ?? 0), 0);
@@ -35,6 +41,7 @@ export default function CheckoutPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
     const res = await placeOrder({
       lines: lines.map((l) => ({
         productId: l.product.id,
@@ -45,8 +52,13 @@ export default function CheckoutPage() {
       })),
       shippingCents: shipping,
       courier: COURIERS.find((c) => c.id === courier)?.label ?? courier,
+      shippingAddress: { name, phone, address, city, postalCode },
     });
     setSubmitting(false);
+    if (!res.ok) {
+      setError(res.error ?? "Something went wrong placing your order. Please try again.");
+      return;
+    }
     if (res.reference) setReference(res.reference);
     clear();
     setPlaced(true);
@@ -96,11 +108,11 @@ export default function CheckoutPage() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="mb-4 text-lg font-bold text-foreground">Shipping Address</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input required placeholder="Full name" aria-label="Full name" />
-              <Input required type="tel" placeholder="Phone number" aria-label="Phone number" />
-              <Input required placeholder="Street address" aria-label="Street address" className="sm:col-span-2" />
-              <Input required placeholder="City" aria-label="City" />
-              <Input required placeholder="Postal code" aria-label="Postal code" />
+              <Input required placeholder="Full name" aria-label="Full name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input required type="tel" placeholder="Phone number" aria-label="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input required placeholder="Street address" aria-label="Street address" className="sm:col-span-2" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <Input required placeholder="City" aria-label="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              <Input required placeholder="Postal code" aria-label="Postal code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
             </div>
           </section>
 
@@ -174,6 +186,9 @@ export default function CheckoutPage() {
             <span className="font-semibold text-foreground">Total</span>
             <span className="text-xl font-black text-foreground">{formatZAR(total)}</span>
           </div>
+          {error && (
+            <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>
+          )}
           <Button type="submit" size="lg" className="mt-5 h-12 w-full" disabled={submitting}>
             {submitting ? "Placing order…" : "Place Order"}
           </Button>

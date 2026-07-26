@@ -25,10 +25,19 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * real DB uuids (demo cart seed) are stored as snapshots with null refs so the
  * insert never violates a foreign key.
  */
+export interface ShippingAddressInput {
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+}
+
 export async function placeOrder(input: {
   lines: OrderLineInput[];
   shippingCents: number;
   courier: string;
+  shippingAddress: ShippingAddressInput;
 }): Promise<PlaceOrderResult> {
   const supabase = await createClient();
   if (!supabase) return { ok: true, fellBack: true };
@@ -52,6 +61,12 @@ export async function placeOrder(input: {
       subtotal_cents: subtotal,
       shipping_cents: input.shippingCents,
       total_cents: subtotal + input.shippingCents,
+      courier: input.courier,
+      shipping_name: input.shippingAddress.name,
+      shipping_phone: input.shippingAddress.phone,
+      shipping_address: input.shippingAddress.address,
+      shipping_city: input.shippingAddress.city,
+      shipping_postal_code: input.shippingAddress.postalCode,
     })
     .select("id")
     .single();
