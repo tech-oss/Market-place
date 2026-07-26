@@ -50,20 +50,32 @@ async function resolveConversation(
 
     let conversationId = existing?.id as string | undefined;
     if (!conversationId) {
-      const { data: created, error: createError } = await supabase
-        .from("conversations")
-        .insert({
-          product_id: product.id,
-          product_title: product.title,
-          product_slug: product.slug,
-          buyer_id: userId,
-          seller_id: product.seller_id,
-        })
-        .select("id")
-        .single();
-      if (createError || !created) {
+      // Insert without RETURNING, then look the row up separately — the
+      // RETURNING clause requires the new row to also pass the table's
+      // SELECT policy in the same statement, which can behave differently
+      // than a plain follow-up SELECT for a security-definer-backed policy.
+      const { error: createError } = await supabase.from("conversations").insert({
+        product_id: product.id,
+        product_title: product.title,
+        product_slug: product.slug,
+        buyer_id: userId,
+        seller_id: product.seller_id,
+      });
+      if (createError) {
         console.error("contactSeller: conversation insert failed", createError);
-        return { kind: "fail", reason: createError?.message ?? "insert returned no row" };
+        return { kind: "fail", reason: createError.message };
+      }
+
+      const { data: created, error: refetchError } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("product_id", product.id)
+        .eq("buyer_id", userId)
+        .eq("seller_id", product.seller_id)
+        .maybeSingle();
+      if (refetchError || !created) {
+        console.error("contactSeller: conversation refetch failed", refetchError);
+        return { kind: "fail", reason: refetchError?.message ?? "insert succeeded but refetch returned no row" };
       }
       conversationId = created.id;
     }
