@@ -46,7 +46,21 @@ export async function updateSession(request: NextRequest) {
       .single();
     if (profile?.role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/seller";
+      url.pathname = "/account";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Role gate for the seller console — buyers may not view seller data.
+  if (path.startsWith("/seller") && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "seller" && profile?.role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/account";
       return NextResponse.redirect(url);
     }
   }

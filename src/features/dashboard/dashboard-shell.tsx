@@ -12,10 +12,14 @@ export function DashboardShell({
   role,
   children,
   messagesUnread = 0,
+  accountName,
+  accountInitials,
 }: {
   role: "seller" | "admin";
   children: React.ReactNode;
   messagesUnread?: number;
+  accountName?: string;
+  accountInitials?: string;
 }) {
   const meta = DASH_META[role];
   const pathname = usePathname();
@@ -111,10 +115,10 @@ export function DashboardShell({
           </button>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:block">
-              {role === "seller" ? "RideFast Motorcycles" : "Platform Admin"}
+              {accountName ?? (role === "seller" ? "RideFast Motorcycles" : "Platform Admin")}
             </span>
             <span className="grid size-9 place-items-center rounded-full bg-ink text-xs font-bold text-white">
-              {role === "seller" ? "RF" : "AD"}
+              {accountInitials ?? (role === "seller" ? "RF" : "AD")}
             </span>
           </div>
         </header>

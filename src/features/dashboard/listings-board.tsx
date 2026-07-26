@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, QrCode, Search } from "lucide-react";
 import { formatZAR } from "@/lib/format";
@@ -8,7 +8,8 @@ import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { LISTING_STATUS_META } from "@/features/dashboard/status";
 import { LabelDialog } from "@/features/dashboard/product-label";
 import { NewListingDialog } from "@/features/dashboard/new-listing-dialog";
-import { createListing } from "@/features/dashboard/actions";
+import { EditListingDialog } from "@/features/dashboard/edit-listing-dialog";
+import { createListing, updateListing } from "@/features/dashboard/actions";
 import type { SellerListing } from "@/types";
 
 export function ListingsBoard({
@@ -21,9 +22,16 @@ export function ListingsBoard({
   const router = useRouter();
   const [listings, setListings] = useState<SellerListing[]>(initial);
   const [labelFor, setLabelFor] = useState<SellerListing | null>(null);
+  const [editing, setEditing] = useState<SellerListing | null>(null);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Keep local state in sync after router.refresh() re-fetches `initial`
+  // from the server (e.g. after creating or editing a listing).
+  useEffect(() => {
+    setListings(initial);
+  }, [initial]);
 
   const filtered = listings.filter(
     (l) =>
@@ -89,7 +97,10 @@ export function ListingsBoard({
                         <button onClick={() => setLabelFor(l)} className="inline-flex items-center gap-1.5 rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
                           <QrCode className="size-3.5" /> Label
                         </button>
-                        <button className="inline-flex items-center gap-1.5 rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+                        <button
+                          onClick={() => setEditing(l)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                        >
                           <Pencil className="size-3.5" /> Edit
                         </button>
                       </div>
@@ -103,6 +114,41 @@ export function ListingsBoard({
       </SectionCard>
 
       {labelFor && <LabelDialog listing={labelFor} onClose={() => setLabelFor(null)} />}
+      {editing && (
+        <EditListingDialog
+          listing={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (input) => {
+            setEditing(null);
+            if (live && !saving) {
+              setSaving(true);
+              const res = await updateListing(input);
+              setSaving(false);
+              if (res.ok && !res.fellBack) {
+                router.refresh();
+                return;
+              }
+            }
+            setListings((prev) =>
+              prev.map((l) =>
+                l.id === input.id
+                  ? {
+                      ...l,
+                      title: input.title,
+                      categorySlug: input.categorySlug,
+                      condition: input.condition as SellerListing["condition"],
+                      priceCents: input.priceCents,
+                      stock: input.stock,
+                      sku: input.sku || l.sku,
+                      shippingCents: input.shippingCents,
+                      shippingLocalCents: input.shippingLocalCents,
+                    }
+                  : l,
+              ),
+            );
+          }}
+        />
+      )}
       {adding && (
         <NewListingDialog
           onClose={() => setAdding(false)}

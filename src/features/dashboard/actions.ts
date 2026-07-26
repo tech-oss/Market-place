@@ -92,6 +92,46 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
   return { ok: true };
 }
 
+export interface UpdateListingInput {
+  id: string;
+  title: string;
+  categorySlug: string;
+  condition: string;
+  priceCents: number;
+  stock: number;
+  sku?: string;
+  shippingCents?: number;
+  shippingLocalCents?: number;
+}
+
+/** Seller: update an existing listing's details, price, stock and shipping. */
+export async function updateListing(input: UpdateListingInput): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found for this user." };
+
+  const { error } = await supabase
+    .from("products")
+    .update({
+      title: input.title,
+      category_slug: input.categorySlug,
+      condition: input.condition,
+      price_cents: input.priceCents,
+      stock: input.stock,
+      sku: input.sku,
+      shipping_cents: input.shippingCents ?? 0,
+      shipping_local_cents: input.shippingLocalCents ?? null,
+    })
+    .eq("id", input.id)
+    .eq("seller_id", seller.id);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
 /** Admin: approve or reject a seller. */
 export async function setSellerStatus(
   sellerId: string,
@@ -147,6 +187,24 @@ export async function markOrderShipped(
     .eq("id", orderId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/**
+ * Seller: request a payout of the full available balance. Runs through a
+ * security-definer RPC so the seller can't insert arbitrary wallet rows —
+ * the function computes the balance server-side and inserts one pending
+ * "payout" debit for that amount.
+ */
+export async function requestPayout(): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found." };
+
+  const { error } = await supabase.rpc("request_payout");
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/seller/wallet");
   return { ok: true };
 }
 

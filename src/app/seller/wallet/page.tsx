@@ -1,6 +1,7 @@
 import { ArrowDownToLine, Clock, Wallet } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, SectionCard, StatCard, StatusPill } from "@/features/dashboard/ui";
+import { PayoutButton } from "@/features/dashboard/payout-button";
 import { getCommissionPct, getWallet } from "@/lib/data/dashboard";
 
 const TXN_TONE = {
@@ -16,9 +17,7 @@ export default async function SellerWalletPage() {
   return (
     <>
       <PageHeading title="Wallet" description="Your earnings, commission and payouts.">
-        <button className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90">
-          <ArrowDownToLine className="size-4" /> Request payout
-        </button>
+        <PayoutButton disabled={balanceCents <= 0} />
       </PageHeading>
 
       <div className="grid gap-4 sm:grid-cols-3">

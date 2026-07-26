@@ -143,7 +143,11 @@ export async function getWallet(): Promise<{
     amountCents: t.amount_cents, date: t.created_at,
     status: t.status === "pending" ? "pending" : "completed",
   }));
-  const balanceCents = txns.filter((t) => t.status === "completed").reduce((s, t) => s + t.amountCents, 0);
+  // Completed sale/commission entries, plus any payout (pending or completed) —
+  // a requested payout deducts from the available balance immediately.
+  const balanceCents = txns
+    .filter((t) => t.status === "completed" || t.type === "payout")
+    .reduce((s, t) => s + t.amountCents, 0);
 
   // Pending = value of this seller's items on orders still held in escrow.
   const { data: held } = await supabase

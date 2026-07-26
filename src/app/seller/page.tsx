@@ -4,15 +4,16 @@ import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { sellerSalesTrend } from "@/mocks/dashboard";
-import { getSellerListings, getSellerOrders, getWallet } from "@/lib/data/dashboard";
+import { getCurrentSeller, getSellerListings, getSellerOrders, getWallet } from "@/lib/data/dashboard";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default async function SellerOverview() {
-  const [sellerListings, sellerOrders, wallet] = await Promise.all([
+  const [sellerListings, sellerOrders, wallet, seller] = await Promise.all([
     getSellerListings(),
     getSellerOrders(),
     getWallet(),
+    getCurrentSeller(),
   ]);
   const walletBalanceCents = wallet.balanceCents;
   const activeListings = sellerListings.filter((l) => l.status === "active").length;
@@ -21,7 +22,7 @@ export default async function SellerOverview() {
 
   return (
     <>
-      <PageHeading title="Overview" description="Welcome back, RideFast Motorcycles.">
+      <PageHeading title="Overview" description={`Welcome back, ${seller?.name ?? "RideFast Motorcycles"}.`}>
         <Link
           href="/seller/listings"
           className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90"
