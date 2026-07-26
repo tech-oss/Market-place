@@ -57,7 +57,7 @@ export default function SellPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/account"
+                href="/register?role=seller"
                 className="inline-flex items-center gap-2 rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
               >
                 Start Selling Today <ArrowRight className="size-4" />
@@ -128,7 +128,7 @@ export default function SellPage() {
           </div>
           <div className="mt-10 text-center">
             <Link
-              href="/account"
+              href="/register?role=seller"
               className="inline-flex items-center gap-2 rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
             >
               Create your seller account <ArrowRight className="size-4" />

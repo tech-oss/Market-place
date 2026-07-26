@@ -1,14 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useActionState, useState } from "react";
 import { Container } from "@/components/shared/container";
 import { Logo } from "@/components/layout/logo";
 import { signUp, type AuthState } from "@/features/auth/actions";
 import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
-  const [role, setRole] = useState<"buyer" | "seller">("buyer");
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
+  const initialRole = useSearchParams().get("role") === "seller" ? "seller" : "buyer";
+  const [role, setRole] = useState<"buyer" | "seller">(initialRole);
   const [state, action, pending] = useActionState<AuthState, FormData>(signUp, {});
 
   return (

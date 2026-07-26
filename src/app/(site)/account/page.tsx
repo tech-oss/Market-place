@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, LayoutDashboard, MapPin, Package, ShieldCheck, Store, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { PartVisual, productKind } from "@/components/shared/part-visual";
 import { formatZAR } from "@/lib/format";
 import { allProducts } from "@/mocks";
+import { getSessionUser } from "@/lib/auth";
 import { signOut } from "@/features/auth/actions";
 import type { OrderStatus } from "@/types";
 
@@ -32,7 +34,12 @@ const ORDERS: { id: string; productId: string; status: OrderStatus; date: string
   { id: "MP-10399", productId: "p-3", status: "released", date: "08 Jul 2026" },
 ];
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login?next=/account");
+
+  const displayName = user.fullName || user.email || "Rider";
+
   return (
     <>
       <PageHeader
@@ -48,8 +55,8 @@ export default function AccountPage() {
                 <User className="size-5" />
               </span>
               <div>
-                <p className="font-semibold text-foreground">Guest Rider</p>
-                <p className="text-xs text-muted-foreground">Buyer account</p>
+                <p className="font-semibold text-foreground">{displayName}</p>
+                <p className="text-xs text-muted-foreground capitalize">{user.role} account</p>
               </div>
             </div>
             <nav className="mt-5 flex flex-col text-sm">
@@ -124,14 +131,16 @@ export default function AccountPage() {
                   </div>
                   <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                 </Link>
-                <Link href="/admin" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
-                  <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand"><ShieldCheck className="size-5" /></span>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">Admin Console</p>
-                    <p className="text-xs text-muted-foreground">Approvals, escrow & commission</p>
-                  </div>
-                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                {user.role === "admin" && (
+                  <Link href="/admin" className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                    <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand"><ShieldCheck className="size-5" /></span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">Admin Console</p>
+                      <p className="text-xs text-muted-foreground">Approvals, escrow & commission</p>
+                    </div>
+                    <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                )}
               </div>
             </section>
 
