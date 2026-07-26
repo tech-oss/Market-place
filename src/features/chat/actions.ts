@@ -10,7 +10,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type ConversationResult =
   | { kind: "self" }
   | { kind: "ok"; id: string }
-  | { kind: "fail" };
+  | { kind: "fail"; reason?: string };
 
 /**
  * Look up (or create) the conversation for this product/buyer, without ever
@@ -29,7 +29,10 @@ async function resolveConversation(
       .select("id, title, slug, seller_id, seller:sellers(profile_id)")
       .eq("id", productId)
       .maybeSingle();
-    if (productError || !product) return { kind: "fail" };
+    if (productError || !product) {
+      console.error("contactSeller: product lookup failed", productError);
+      return { kind: "fail", reason: productError?.message ?? "product not found" };
+    }
 
     const sellerProfile = Array.isArray((product as any).seller)
       ? (product as any).seller[0]?.profile_id
@@ -58,14 +61,18 @@ async function resolveConversation(
         })
         .select("id")
         .single();
-      if (createError || !created) return { kind: "fail" };
+      if (createError || !created) {
+        console.error("contactSeller: conversation insert failed", createError);
+        return { kind: "fail", reason: createError?.message ?? "insert returned no row" };
+      }
       conversationId = created.id;
     }
-    if (!conversationId) return { kind: "fail" };
+    if (!conversationId) return { kind: "fail", reason: "no conversation id" };
 
     return { kind: "ok", id: conversationId };
-  } catch {
-    return { kind: "fail" };
+  } catch (err) {
+    console.error("contactSeller: unexpected error", err);
+    return { kind: "fail", reason: err instanceof Error ? err.message : "unknown error" };
   }
 }
 
@@ -87,7 +94,8 @@ export async function contactSeller(formData: FormData): Promise<void> {
   const result = await resolveConversation(supabase, user.id, productId);
   if (result.kind === "self") redirect("/seller/listings");
   if (result.kind === "ok") redirect(`/messages/${result.id}`);
-  redirect(`/parts/${slug}?contact=error`);
+  // TEMP diagnostic: surface the reason in the URL. Remove once root-caused.
+  redirect(`/parts/${slug}?contact=error&reason=${encodeURIComponent(result.reason ?? "")}`);
 }
 
 /** Mark a conversation read for the current user (called when a thread opens). */
