@@ -71,7 +71,10 @@ export async function placeOrder(input: {
     .select("id")
     .single();
 
-  if (error || !order) return { ok: false, error: error?.message ?? "Could not create order." };
+  if (error || !order) {
+    console.error("placeOrder: order insert failed", error);
+    return { ok: false, error: "Could not place your order. Please try again." };
+  }
 
   const items = input.lines.map((l) => ({
     order_id: order.id,
@@ -81,7 +84,11 @@ export async function placeOrder(input: {
     qty: l.qty,
     price_cents: l.priceCents,
   }));
-  await supabase.from("order_items").insert(items);
+  const { error: itemsError } = await supabase.from("order_items").insert(items);
+  if (itemsError) {
+    console.error("placeOrder: order_items insert failed", itemsError);
+    return { ok: false, error: "Could not place your order. Please try again." };
+  }
 
   return { ok: true, reference };
 }
