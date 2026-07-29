@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { Printer, X } from "lucide-react";
-import { formatZAR, conditionLabel } from "@/lib/format";
+import { formatZAR } from "@/lib/format";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { SellerListing } from "@/types";
 
@@ -20,10 +20,10 @@ function Barcode({ value }: { value: string }) {
     try {
       JsBarcode(ref.current, safeValue || " ", {
         format: "CODE128",
-        width: 1.3,
-        height: 34,
+        width: 1.4,
+        height: 42,
         displayValue: true,
-        fontSize: 10,
+        fontSize: 11,
         margin: 0,
         background: "#ffffff",
         lineColor: "#111111",
@@ -57,14 +57,9 @@ export function ProductLabel({ listing }: { listing: SellerListing }) {
       className="flex flex-col justify-center overflow-hidden border border-neutral-300 bg-white px-[3mm] py-[1.5mm] text-neutral-900"
       style={{ width: "90mm", height: "33mm" }}
     >
-      <p className="truncate text-[3.2mm] font-bold leading-tight">{listing.title}</p>
-      <p className="mt-[0.3mm] truncate text-[2.4mm] leading-tight text-neutral-500">
-        SKU: {listing.sku} · {conditionLabel(listing.condition)}
-      </p>
+      <Barcode value={listing.sku} />
+      <p className="mt-[0.5mm] truncate text-[3mm] leading-tight">{listing.title}</p>
       <p className="mt-[0.3mm] text-[3.6mm] font-black leading-tight">{formatZAR(listing.priceCents)}</p>
-      <div className="mt-[0.5mm]">
-        <Barcode value={listing.sku} />
-      </div>
     </div>
   );
 }
