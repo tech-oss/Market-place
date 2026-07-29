@@ -7,7 +7,6 @@ import { Printer, X } from "lucide-react";
 import { formatZAR, conditionLabel } from "@/lib/format";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { SellerListing } from "@/types";
-import { currentSeller } from "@/mocks/dashboard";
 
 function Barcode({ value }: { value: string }) {
   const ref = useRef<SVGSVGElement>(null);
@@ -66,14 +65,9 @@ export function ProductLabel({ listing }: { listing: SellerListing }) {
       className="w-[340px] rounded-md border border-neutral-300 bg-white p-4 text-neutral-900"
     >
       <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="grid size-6 place-items-center rounded bg-brand text-[10px] font-black text-white">
-            MP
-          </span>
-          <span className="text-xs font-bold uppercase tracking-wide">
-            {currentSeller.name}
-          </span>
-        </div>
+        <span className="grid size-6 place-items-center rounded bg-brand text-[10px] font-black text-white">
+          MP
+        </span>
         <span className="text-[10px] font-semibold uppercase text-neutral-500">
           {conditionLabel(listing.condition)}
         </span>
