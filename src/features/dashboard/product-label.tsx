@@ -5,14 +5,22 @@ import JsBarcode from "jsbarcode";
 import QRCode from "qrcode";
 import { Printer, X } from "lucide-react";
 import { formatZAR, conditionLabel } from "@/lib/format";
+import { sanitizeForCode128 } from "@/lib/barcode";
 import type { SellerListing } from "@/types";
 import { currentSeller } from "@/mocks/dashboard";
 
 function Barcode({ value }: { value: string }) {
   const ref = useRef<SVGSVGElement>(null);
+  const [failed, setFailed] = useState(false);
+
   useEffect(() => {
-    if (ref.current) {
-      JsBarcode(ref.current, value, {
+    if (!ref.current) return;
+    // Code128 only encodes printable ASCII — strip anything else so a
+    // legacy SKU saved before this validation existed can't crash the
+    // renderer or silently print a blank/garbled barcode.
+    const safeValue = sanitizeForCode128(value);
+    try {
+      JsBarcode(ref.current, safeValue || " ", {
         format: "CODE128",
         width: 1.6,
         height: 46,
@@ -22,8 +30,19 @@ function Barcode({ value }: { value: string }) {
         background: "#ffffff",
         lineColor: "#111111",
       });
+      setFailed(false);
+    } catch {
+      setFailed(true);
     }
   }, [value]);
+
+  if (failed) {
+    return (
+      <p className="rounded bg-red-50 px-2 py-3 text-center text-[11px] text-red-700">
+        Couldn&rsquo;t generate a barcode for this SKU — edit it to use only letters, numbers and standard symbols.
+      </p>
+    );
+  }
   return <svg ref={ref} className="w-full" />;
 }
 

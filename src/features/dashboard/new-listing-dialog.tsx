@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ImagePlus, Loader2, QrCode, X } from "lucide-react";
 import { categories, conditionOptions } from "@/mocks";
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
 
 export interface ListingInput {
@@ -191,7 +192,15 @@ export function NewListingDialog({
           {/* SKU / Part No */}
           <div>
             <label className={labelCls}>SKU / Part No</label>
-            <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="MP-BRK-0001 (auto if blank)" className={field} />
+            <input
+              value={sku}
+              onChange={(e) => setSku(sanitizeForCode128(e.target.value))}
+              placeholder="MP-BRK-0001 (auto if blank)"
+              className={field}
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Printed as a Code128 barcode — letters, numbers and standard symbols only.
+            </p>
           </div>
           <div>
             <label className={labelCls}>OEM part number</label>

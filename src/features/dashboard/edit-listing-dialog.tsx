@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { categories, conditionOptions } from "@/mocks";
+import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
 import type { UpdateListingInput } from "@/features/dashboard/actions";
 
@@ -90,7 +91,10 @@ export function EditListingDialog({
           </div>
           <div>
             <label className={labelCls}>SKU / Part No</label>
-            <input value={sku} onChange={(e) => setSku(e.target.value)} className={field} />
+            <input value={sku} onChange={(e) => setSku(sanitizeForCode128(e.target.value))} className={field} />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Printed as a Code128 barcode — letters, numbers and standard symbols only.
+            </p>
           </div>
           <div />
 

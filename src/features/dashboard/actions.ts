@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeller } from "@/lib/data/dashboard";
+import { sanitizeForCode128 } from "@/lib/barcode";
 
 export interface ActionResult {
   ok: boolean;
@@ -48,7 +49,7 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
     input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") +
     "-" + Math.random().toString(36).slice(2, 6);
   const sku =
-    input.sku?.trim() ||
+    sanitizeForCode128(input.sku?.trim() ?? "") ||
     `MP-${input.categorySlug.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const { data: product, error } = await supabase
@@ -119,7 +120,7 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
       condition: input.condition,
       price_cents: input.priceCents,
       stock: input.stock,
-      sku: input.sku,
+      sku: input.sku ? sanitizeForCode128(input.sku) : input.sku,
       shipping_cents: input.shippingCents ?? 0,
       shipping_local_cents: input.shippingLocalCents ?? null,
     })
