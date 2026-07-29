@@ -25,11 +25,14 @@ export default async function SellerProfilePage({
     business_type: "Dealership",
     id_doc_url: "demo",
     proof_of_residence_url: "demo",
+    proof_of_banking_url: "demo",
   };
 
   const isActive = view.status === "active";
   const idUploaded = Boolean(view.id_doc_url);
   const proofUploaded = Boolean(view.proof_of_residence_url);
+  const bankingUploaded = Boolean(view.proof_of_banking_url);
+  const allDocsUploaded = idUploaded && proofUploaded && bankingUploaded;
 
   return (
     <>
@@ -66,6 +69,7 @@ export default async function SellerProfilePage({
         />
 
         <div className="space-y-6">
+          <span id="verification" className="block scroll-mt-24" />
           <SectionCard title="Verification">
             <div className="space-y-4 p-5">
               {isActive ? (
@@ -88,12 +92,13 @@ export default async function SellerProfilePage({
 
               <KycUpload kind="id" label="ID Document" uploaded={idUploaded} />
               <KycUpload kind="proof" label="Proof of Residence" uploaded={proofUploaded} />
+              <KycUpload kind="banking" label="Proof of Banking" uploaded={bankingUploaded} />
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Documents</span>
                 <StatusPill
-                  label={idUploaded && proofUploaded ? "Submitted" : "Incomplete"}
-                  tone={idUploaded && proofUploaded ? "green" : "amber"}
+                  label={allDocsUploaded ? "Submitted" : "Incomplete"}
+                  tone={allDocsUploaded ? "green" : "amber"}
                 />
               </div>
             </div>

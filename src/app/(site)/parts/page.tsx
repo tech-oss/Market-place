@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PackageSearch } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
@@ -10,6 +11,7 @@ import {
   CatalogSort,
   MobileFilters,
 } from "@/features/catalog/catalog-filters";
+import { SearchBar } from "@/features/catalog/search-bar";
 import { filterProducts, type CatalogParams } from "@/features/catalog/filter";
 
 export const metadata: Metadata = {
@@ -43,6 +45,9 @@ export default async function PartsPage({
           </div>
 
           <div>
+            <Suspense fallback={<div className="mb-6 h-12 rounded-xl border border-input bg-muted/40" />}>
+              <SearchBar />
+            </Suspense>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <MobileFilters />

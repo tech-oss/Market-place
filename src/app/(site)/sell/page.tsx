@@ -29,8 +29,8 @@ const BENEFITS = [
 ];
 
 const STEPS = [
-  { n: 1, title: "Register your business", body: "Tell us about your dealership, scrapyard or workshop." },
-  { n: 2, title: "Upload your documents", body: "Provide a valid ID and proof of residence for verification (FICA)." },
+  { n: 1, title: "Register your business", body: "Tell us about your dealership, used parts dealer or workshop." },
+  { n: 2, title: "Upload your documents", body: "Provide a valid ID, proof of residence and proof of banking for verification (FICA)." },
   { n: 3, title: "Get approved", body: "Our team reviews and activates your account — usually within 48 hours." },
   { n: 4, title: "List & sell", body: "Add products with fitment, print labels, and start earning." },
 ];

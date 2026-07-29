@@ -9,16 +9,12 @@ import { StarRating } from "@/components/shared/star-rating";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { ProductGrid } from "@/components/shared/product-grid";
 import { conditionLabel } from "@/lib/format";
-import { allProducts, categories, productReviews } from "@/mocks";
-import { getProductBySlug, getRelatedProducts } from "@/lib/data/products";
+import { categories } from "@/mocks";
+import { getProductBySlug, getProductReviews, getRelatedProducts } from "@/lib/data/products";
 import { ProductGallery } from "@/features/product/product-gallery";
 import { productKind } from "@/components/shared/part-visual";
 import { BuyBox } from "@/features/product/buy-box";
 import { contactSeller } from "@/features/chat/actions";
-
-export function generateStaticParams() {
-  return allProducts.map((p) => ({ slug: p.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -47,10 +43,14 @@ export default async function ProductPage({
   if (!product) notFound();
 
   const category = categories.find((c) => c.slug === product.categorySlug);
-  const related = await getRelatedProducts(product.categorySlug, product.id);
+  const [related, productReviews] = await Promise.all([
+    getRelatedProducts(product.categorySlug, product.id),
+    getProductReviews(product.id),
+  ]);
 
-  const avgRating =
-    productReviews.reduce((s, r) => s + r.rating, 0) / productReviews.length;
+  const avgRating = productReviews.length
+    ? productReviews.reduce((s, r) => s + r.rating, 0) / productReviews.length
+    : 0;
 
   const specs: [string, string][] = [
     ["Condition", conditionLabel(product.condition)],
@@ -99,9 +99,11 @@ export default async function ProductPage({
                 {product.fitment[0].yearFrom}–{product.fitment[0].yearTo})
               </p>
             )}
-            <div className="mt-3 flex items-center gap-2">
-              <StarRating rating={Number(avgRating.toFixed(1))} count={productReviews.length} />
-            </div>
+            {productReviews.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                <StarRating rating={Number(avgRating.toFixed(1))} count={productReviews.length} />
+              </div>
+            )}
           </div>
 
           <BuyBox product={product} />
@@ -197,21 +199,23 @@ export default async function ProductPage({
       </div>
 
       {/* Reviews */}
-      <section className="mt-12">
-        <h2 className="mb-4 text-xl font-bold text-foreground">
-          Reviews ({productReviews.length})
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {productReviews.map((r) => (
-            <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
-              <StarRating rating={r.rating} size={13} />
-              <h3 className="mt-2 font-semibold text-foreground">{r.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{r.body}</p>
-              <p className="mt-3 text-xs font-medium text-foreground">— {r.author}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      {productReviews.length > 0 && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-xl font-bold text-foreground">
+            Reviews ({productReviews.length})
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {productReviews.map((r) => (
+              <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
+                <StarRating rating={r.rating} size={13} />
+                <h3 className="mt-2 font-semibold text-foreground">{r.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{r.body}</p>
+                <p className="mt-3 text-xs font-medium text-foreground">— {r.author}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Related */}
       {related.length > 0 && (

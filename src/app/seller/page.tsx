@@ -3,10 +3,30 @@ import { Package, Receipt, TrendingUp, Wallet } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
-import { sellerSalesTrend } from "@/mocks/dashboard";
 import { getCurrentSeller, getSellerListings, getSellerOrders, getWallet } from "@/lib/data/dashboard";
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** Bucket order totals (in Rand) into the last 7 calendar days, oldest first. */
+function last7DayTrend(orders: { totalCents: number; placedAt: string }[]): { data: number[]; labels: string[] } {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (6 - i));
+    return d;
+  });
+  const data = days.map((day) => {
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+    const cents = orders
+      .filter((o) => {
+        const t = new Date(o.placedAt).getTime();
+        return t >= day.getTime() && t < next.getTime();
+      })
+      .reduce((s, o) => s + o.totalCents, 0);
+    return Math.round(cents / 100);
+  });
+  const labels = days.map((d) => d.toLocaleDateString("en-ZA", { weekday: "short" }));
+  return { data, labels };
+}
 
 export default async function SellerOverview() {
   const [sellerListings, sellerOrders, wallet, seller] = await Promise.all([
@@ -19,10 +39,11 @@ export default async function SellerOverview() {
   const activeListings = sellerListings.filter((l) => l.status === "active").length;
   const inEscrow = sellerOrders.filter((o) => o.status === "paid-held" || o.status === "shipped").length;
   const totalSalesCents = sellerOrders.reduce((s, o) => s + o.totalCents, 0);
+  const trend = last7DayTrend(sellerOrders);
 
   return (
     <>
-      <PageHeading title="Overview" description={`Welcome back, ${seller?.name ?? "RideFast Motorcycles"}.`}>
+      <PageHeading title="Overview" description={`Welcome back, ${seller?.name ?? "Seller"}.`}>
         <Link
           href="/seller/listings"
           className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90"
@@ -41,7 +62,7 @@ export default async function SellerOverview() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <SectionCard title="Sales — last 7 days" className="lg:col-span-2">
           <div className="p-5">
-            <MiniBarChart data={sellerSalesTrend} labels={DAY_LABELS} />
+            <MiniBarChart data={trend.data} labels={trend.labels} />
           </div>
         </SectionCard>
 

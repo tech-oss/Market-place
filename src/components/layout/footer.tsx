@@ -9,7 +9,6 @@ const FOOTER_COLUMNS = [
     links: [
       { label: "All Parts", href: "/parts" },
       { label: "Categories", href: "/categories" },
-      { label: "Used & Rare", href: "/parts?condition=used" },
       { label: "New Arrivals", href: "/parts?sort=newest" },
     ],
   },

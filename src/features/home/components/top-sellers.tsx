@@ -4,11 +4,23 @@ import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
 import { StarRating } from "@/components/shared/star-rating";
-import { sellers } from "@/mocks";
 import { formatCount } from "@/lib/format";
 
+interface TopSeller {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  location: string;
+  rating: number;
+  reviewCount: number;
+  partCount: number;
+  verified: boolean;
+}
+
 /** Section 08 — Top Sellers. */
-export function TopSellers() {
+export function TopSellers({ sellers }: { sellers: TopSeller[] }) {
+  if (sellers.length === 0) return null;
   return (
     <section className="py-12">
       <Container>

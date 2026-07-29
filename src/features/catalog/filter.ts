@@ -15,14 +15,27 @@ export function filterProducts(products: Product[], params: CatalogParams): Prod
   let result = [...products];
 
   if (params.q) {
-    const q = params.q.toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.brandName.toLowerCase().includes(q) ||
-        p.oemNumbers.some((n) => n.toLowerCase().includes(q)) ||
-        p.fitment.some((f) => `${f.brand} ${f.model}`.toLowerCase().includes(q)),
-    );
+    // Free-text keyword search — split on whitespace so multi-token queries like
+    // "bmw 2020 brake" match a product whose fields collectively contain all
+    // tokens (not the exact phrase). Searches title, SKU, brand, category, OEM
+    // numbers and every fitment brand/model/year range.
+    const tokens = params.q.toLowerCase().split(/\s+/).filter(Boolean);
+    result = result.filter((p) => {
+      const haystack = [
+        p.title,
+        p.brandName,
+        p.categorySlug,
+        ...p.oemNumbers,
+        ...p.fitment.flatMap((f) => [
+          f.brand,
+          f.model,
+          ...Array.from({ length: f.yearTo - f.yearFrom + 1 }, (_, i) => String(f.yearFrom + i)),
+        ]),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return tokens.every((t) => haystack.includes(t));
+    });
   }
 
   if (params.brand) {

@@ -5,7 +5,9 @@ import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { StarRating } from "@/components/shared/star-rating";
 import { Reveal } from "@/components/shared/reveal";
-import { sellers } from "@/mocks";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Store } from "lucide-react";
+import { getPublicSellers } from "@/lib/data/dashboard";
 import { formatCount } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -13,7 +15,8 @@ export const metadata: Metadata = {
   description: "Browse verified motorcycle parts sellers across South Africa.",
 };
 
-export default function SellersPage() {
+export default async function SellersPage() {
+  const sellers = await getPublicSellers();
   return (
     <>
       <PageHeader
@@ -22,6 +25,13 @@ export default function SellersPage() {
         crumbs={[{ label: "Home", href: "/" }, { label: "Sellers" }]}
       />
       <Container className="py-10">
+        {sellers.length === 0 ? (
+          <EmptyState
+            icon={Store}
+            title="No verified sellers yet"
+            description="Approved sellers will appear here once they go live on the marketplace."
+          />
+        ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sellers.map((seller, i) => (
             <Reveal key={seller.id} delay={Math.min(i, 6) * 0.05}>
@@ -51,6 +61,7 @@ export default function SellersPage() {
             </Reveal>
           ))}
         </div>
+        )}
       </Container>
     </>
   );

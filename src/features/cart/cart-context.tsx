@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import type { Product } from "@/types";
-import { allProducts } from "@/mocks";
 
 export interface CartLine {
   product: Product;
@@ -28,14 +27,8 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-/** Seed the cart with a couple of items so the demo shows a populated state. */
-const INITIAL: CartLine[] = [
-  { product: allProducts.find((p) => p.id === "p-1")!, qty: 1 },
-  { product: allProducts.find((p) => p.id === "p-16")!, qty: 2 },
-];
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(INITIAL);
+  const [lines, setLines] = useState<CartLine[]>([]);
 
   const add = useCallback((product: Product, qty = 1) => {
     setLines((prev) => {

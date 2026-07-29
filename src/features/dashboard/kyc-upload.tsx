@@ -10,7 +10,7 @@ export function KycUpload({
   label,
   uploaded: initialUploaded,
 }: {
-  kind: "id" | "proof";
+  kind: "id" | "proof" | "banking";
   label: string;
   uploaded: boolean;
 }) {

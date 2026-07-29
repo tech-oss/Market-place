@@ -34,16 +34,23 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "");
   const role = formData.get("role") === "seller" ? "seller" : "buyer";
+  const rawSellerType = String(formData.get("sellerType") ?? "individual");
+  const sellerType = ["individual", "parts_dealer", "accessories_dealer"].includes(rawSellerType)
+    ? rawSellerType
+    : "individual";
+
+  const metadata: Record<string, string> = { full_name: fullName, role };
+  if (role === "seller") metadata.seller_type = sellerType;
 
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName, role } },
+    options: { data: metadata },
   });
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  // New sellers land on verification (upload ID + proof of residence); they may skip.
+  // New sellers land on verification (upload ID + proof of residence + banking); they may skip.
   redirect(role === "seller" ? "/seller/profile?welcome=1" : "/account");
 }
 

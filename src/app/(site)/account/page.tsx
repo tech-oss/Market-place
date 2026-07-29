@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { ArrowRight, LayoutDashboard, MapPin, Package, ShieldCheck, Store, User } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
-import { PartVisual, productKind } from "@/components/shared/part-visual";
+import { EmptyState } from "@/components/shared/empty-state";
 import { formatZAR } from "@/lib/format";
-import { allProducts } from "@/mocks";
 import { getSessionUser } from "@/lib/auth";
+import { getBuyerOrders } from "@/lib/data/dashboard";
 import { signOut } from "@/features/auth/actions";
 import type { OrderStatus } from "@/types";
 
@@ -28,17 +28,12 @@ const STATUS_META: Record<OrderStatus, { label: string; className: string }> = {
   cancelled: { label: "Cancelled", className: "bg-neutral-200 text-neutral-700" },
 };
 
-const ORDERS: { id: string; productId: string; status: OrderStatus; date: string }[] = [
-  { id: "MP-10482", productId: "p-1", status: "paid-held", date: "22 Jul 2026" },
-  { id: "MP-10461", productId: "p-16", status: "shipped", date: "19 Jul 2026" },
-  { id: "MP-10399", productId: "p-3", status: "released", date: "08 Jul 2026" },
-];
-
 export default async function AccountPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login?next=/account");
 
   const displayName = user.fullName || user.email || "Rider";
+  const orders = await getBuyerOrders();
 
   return (
     <>
@@ -85,38 +80,50 @@ export default async function AccountPage() {
             {/* Orders */}
             <section>
               <h2 className="mb-4 text-xl font-bold text-foreground">Recent Orders</h2>
-              <ul className="space-y-4">
-                {ORDERS.map((order) => {
-                  const product = allProducts.find((p) => p.id === order.productId)!;
-                  const meta = STATUS_META[order.status];
-                  return (
-                    <li
-                      key={order.id}
-                      className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4"
-                    >
-                      <PartVisual kind={productKind(product)} alt={product.title} className="size-16 rounded-xl" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted-foreground">Order {order.id} · {order.date}</p>
-                        <Link
-                          href={`/parts/${product.slug}`}
-                          className="font-semibold text-foreground hover:text-brand"
-                        >
-                          {product.title}
-                        </Link>
-                        <p className="text-sm text-muted-foreground">{formatZAR(product.priceCents)}</p>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
-                        {meta.label}
-                      </span>
-                      {order.status === "shipped" && (
-                        <button className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-brand-foreground">
-                          Confirm delivery
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              {orders.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="No orders yet"
+                  description="When you buy a part, your orders and their escrow status show up here."
+                  action={{ label: "Shop parts", href: "/parts" }}
+                />
+              ) : (
+                <ul className="space-y-4">
+                  {orders.map((order) => {
+                    const meta = STATUS_META[order.status];
+                    const first = order.items[0];
+                    const extra = order.items.length - 1;
+                    const date = new Date(order.placedAt).toLocaleDateString("en-ZA", {
+                      year: "numeric", month: "short", day: "numeric",
+                    });
+                    return (
+                      <li
+                        key={order.id}
+                        className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4"
+                      >
+                        <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+                          <Package className="size-6" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-muted-foreground">Order {order.reference} · {date}</p>
+                          {first?.productSlug ? (
+                            <Link href={`/parts/${first.productSlug}`} className="font-semibold text-foreground hover:text-brand">
+                              {first?.title ?? "Item"}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-foreground">{first?.title ?? "Item"}</span>
+                          )}
+                          {extra > 0 && <span className="text-sm text-muted-foreground"> + {extra} more</span>}
+                          <p className="text-sm text-muted-foreground">{formatZAR(order.totalCents)}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
+                          {meta.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
 
             {/* Dashboard access (demo) */}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/features/dashboard/dashboard-shell";
+import { DocWarningBanner } from "@/features/dashboard/doc-warning-banner";
 import { getUnreadTotal } from "@/lib/data/chat";
 import { getCurrentSeller } from "@/lib/data/dashboard";
 import { getSessionUser } from "@/lib/auth";
@@ -25,8 +26,18 @@ export default async function SellerLayout({ children }: { children: React.React
         .toUpperCase()
     : undefined;
 
+  // Only nag unverified sellers who still owe documents. An already-active
+  // seller (incl. admin-override approvals) never sees the banner.
+  const missing: string[] = [];
+  if (seller && seller.status !== "active") {
+    if (!seller.id_doc_url) missing.push("ID document");
+    if (!seller.proof_of_residence_url) missing.push("proof of residence");
+    if (!seller.proof_of_banking_url) missing.push("proof of banking");
+  }
+
   return (
     <DashboardShell role="seller" messagesUnread={unread} accountName={accountName} accountInitials={accountInitials}>
+      <DocWarningBanner missing={missing} />
       {children}
     </DashboardShell>
   );

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { Heart } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
-import { ProductGrid } from "@/components/shared/product-grid";
-import { featuredProducts } from "@/mocks";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export const metadata: Metadata = {
   title: "Wishlist",
@@ -10,9 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default function WishlistPage() {
-  // Demo: a few saved items. Wishlist persistence lands in Step 3.
-  const saved = featuredProducts.slice(0, 3);
-
   return (
     <>
       <PageHeader
@@ -21,7 +18,12 @@ export default function WishlistPage() {
         crumbs={[{ label: "Home", href: "/" }, { label: "Wishlist" }]}
       />
       <Container className="py-10">
-        <ProductGrid products={saved} />
+        <EmptyState
+          icon={Heart}
+          title="Your wishlist is empty"
+          description="Save parts you're interested in and they'll show up here."
+          action={{ label: "Browse parts", href: "/parts" }}
+        />
       </Container>
     </>
   );

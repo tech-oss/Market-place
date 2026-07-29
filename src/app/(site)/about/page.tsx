@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { Prose } from "@/components/shared/prose";
-import { platformStats } from "@/mocks";
+import { getPlatformStats } from "@/lib/data/dashboard";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -10,7 +10,8 @@ export const metadata: Metadata = {
     "Motorcycle Products is South Africa's trusted marketplace for new and used motorcycle parts, built on escrow-protected payments.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const platformStats = await getPlatformStats();
   return (
     <>
       <PageHeader
@@ -31,10 +32,10 @@ export default function AboutPage() {
 
           <h2>Who sells here</h2>
           <p>
-            Dealerships, scrapyards, workshops and individual riders all list on
+            Dealerships, used parts dealers, workshops and individual riders all list on
             Motorcycle Products. Every seller is manually verified — including a valid
-            ID and proof of residence — before they can go live, so you always know
-            who you&rsquo;re buying from.
+            ID, proof of residence and proof of banking — before they can go live, so you
+            always know who you&rsquo;re buying from.
           </p>
 
           <h2>Built for riders</h2>

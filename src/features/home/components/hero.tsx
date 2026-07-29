@@ -21,7 +21,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { brands, platformStats } from "@/mocks";
+import { brands } from "@/mocks";
+
+interface PlatformStat {
+  label: string;
+  value: string;
+}
 
 const TRUST = [
   { icon: ShieldCheck, title: "Escrow Protected", body: "Your money is safe until delivery" },
@@ -96,7 +101,7 @@ function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
   );
 }
 
-export function Hero() {
+export function Hero({ stats }: { stats: PlatformStat[] }) {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -205,7 +210,7 @@ export function Hero() {
       {/* Stat bar */}
       <Container className="pb-14 pt-6">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink text-center lg:grid-cols-4">
-          {platformStats.map((s) => (
+          {stats.map((s) => (
             <div key={s.label} className="px-4 py-6">
               <CountUp value={s.value} className="block text-2xl font-black text-white sm:text-3xl" />
               <p className="mt-1 text-xs font-medium uppercase tracking-wide text-white/50">

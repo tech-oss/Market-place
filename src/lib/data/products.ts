@@ -56,17 +56,20 @@ function mapRow(r: any): Product {
 
 export async function getCatalogProducts(): Promise<Product[]> {
   const supabase = await createClient();
+  // Only fall back to demo data when there is no backend at all. When Supabase
+  // is connected, return exactly what it holds — an empty catalog stays empty
+  // rather than surfacing demo listings on the live site.
   if (!supabase) return mockAll;
   const { data, error } = await supabase.from("products").select(SELECT).eq("status", "active");
-  if (error || !data) return mockAll;
-  return data.map(mapRow);
+  if (error) return [];
+  return (data ?? []).map(mapRow);
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return mockFeatured;
   const { data } = await supabase.from("products").select(SELECT).eq("is_featured", true).limit(5);
-  return data?.length ? data.map(mapRow) : mockFeatured;
+  return (data ?? []).map(mapRow);
 }
 
 export async function getRecentProducts(): Promise<Product[]> {
@@ -75,17 +78,92 @@ export async function getRecentProducts(): Promise<Product[]> {
   const { data } = await supabase
     .from("products").select(SELECT).eq("status", "active")
     .order("listed_at", { ascending: false }).limit(5);
-  return data?.length ? data.map(mapRow) : mockRecent;
+  return (data ?? []).map(mapRow);
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const supabase = await createClient();
   if (!supabase) return mockBySlug(slug) ?? null;
-  const { data } = await supabase.from("products").select(SELECT).eq("slug", slug).single();
-  return data ? mapRow(data) : mockBySlug(slug) ?? null;
+  const { data } = await supabase.from("products").select(SELECT).eq("slug", slug).maybeSingle();
+  return data ? mapRow(data) : null;
 }
 
 export async function getRelatedProducts(categorySlug: string, excludeId: string): Promise<Product[]> {
   const all = await getCatalogProducts();
   return all.filter((p) => p.categorySlug === categorySlug && p.id !== excludeId).slice(0, 4);
+}
+
+export interface ProductReview {
+  id: string;
+  author: string;
+  rating: number;
+  title: string;
+  body: string;
+  createdAt: string;
+}
+
+/** Real reviews for a product. Empty when none exist — no demo reviews. */
+export async function getProductReviews(productId: string): Promise<ProductReview[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("reviews")
+    .select("id, author, rating, title, body, created_at")
+    .eq("product_id", productId)
+    .order("created_at", { ascending: false });
+  return (data ?? []).map((r) => ({
+    id: r.id, author: r.author, rating: r.rating,
+    title: r.title ?? "", body: r.body ?? "", createdAt: r.created_at,
+  }));
+}
+
+export interface PublicSeller {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  location: string;
+  rating: number;
+  reviewCount: number;
+  verified: boolean;
+  memberSince: string;
+}
+
+/** Public seller storefront by slug (active sellers only), with their live products. */
+export async function getSellerStorefront(
+  slug: string,
+): Promise<{ seller: PublicSeller; products: Product[] } | null> {
+  const supabase = await createClient();
+  if (!supabase) {
+    const { getSellerBySlug, getProductsBySeller } = await import("@/mocks");
+    const s = getSellerBySlug(slug);
+    if (!s) return null;
+    return {
+      seller: {
+        id: s.id, name: s.name, slug: s.slug, logo: s.logo, location: s.location,
+        rating: s.rating, reviewCount: s.reviewCount, verified: s.verified, memberSince: s.memberSince,
+      },
+      products: getProductsBySeller(s.id),
+    };
+  }
+
+  const { data: s } = await supabase
+    .from("sellers")
+    .select("id,name,slug,logo,location,rating,review_count,verified,member_since,status")
+    .eq("slug", slug)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!s) return null;
+
+  const { data: prods } = await supabase
+    .from("products").select(SELECT).eq("seller_id", s.id).eq("status", "active");
+
+  return {
+    seller: {
+      id: s.id, name: s.name, slug: s.slug, logo: s.logo ?? s.name.slice(0, 2).toUpperCase(),
+      location: s.location ?? "—", rating: Number(s.rating), reviewCount: s.review_count,
+      verified: s.verified, memberSince: s.member_since,
+    },
+    products: (prods ?? []).map(mapRow),
+  };
 }

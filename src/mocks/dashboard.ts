@@ -53,13 +53,7 @@ export const walletTxns: WalletTxn[] = [
 export const sellerSalesTrend = [4200, 3100, 5600, 2400, 6800, 5200, 7890];
 
 /** ---- Admin: seller applications ----------------------------------------- */
-export const sellerApplications: SellerApplication[] = [
-  { id: "a-1", businessName: "Cape Moto Breakers", ownerName: "Riaan Botha", email: "riaan@capemoto.co.za", location: "Cape Town", businessType: "Scrapyard", submittedAt: daysAgo(0), idDocUploaded: true, proofOfResidenceUploaded: true, status: "pending" },
-  { id: "a-2", businessName: "Durban Dyno Works", ownerName: "Nadia Pillay", email: "nadia@dynoworks.co.za", location: "Durban", businessType: "Workshop", submittedAt: daysAgo(1), idDocUploaded: true, proofOfResidenceUploaded: true, status: "pending" },
-  { id: "a-3", businessName: "Highveld Superbikes", ownerName: "Tebogo Mokoena", email: "tebogo@highveldsb.co.za", location: "Pretoria", businessType: "Dealership", submittedAt: daysAgo(2), idDocUploaded: true, proofOfResidenceUploaded: false, status: "pending" },
-  { id: "a-4", businessName: "Garden Route Spares", ownerName: "Elmarie du Toit", email: "elmarie@grspares.co.za", location: "George", businessType: "Individual", submittedAt: daysAgo(3), idDocUploaded: true, proofOfResidenceUploaded: true, status: "active" },
-  { id: "a-5", businessName: "Fast Lane Salvage", ownerName: "Kyle Adams", email: "kyle@fastlane.co.za", location: "Port Elizabeth", businessType: "Scrapyard", submittedAt: daysAgo(5), idDocUploaded: false, proofOfResidenceUploaded: false, status: "rejected" },
-];
+export const sellerApplications: SellerApplication[] = [];
 
 /** ---- Admin: platform stats ---------------------------------------------- */
 export const adminStats = {

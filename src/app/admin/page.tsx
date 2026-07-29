@@ -2,12 +2,33 @@ import Link from "next/link";
 import { AlertTriangle, Banknote, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
-import { adminRevenueTrend } from "@/mocks/dashboard";
 import { getActiveSellerCount, getAdminOrders, getCommissionPct, getSellerApplications } from "@/lib/data/dashboard";
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Bucket order GMV (in Rand) into the last 7 calendar days, oldest first. */
+function last7DayRevenue(orders: { totalCents: number; date: string }[]): { data: number[]; labels: string[] } {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (6 - i));
+    return d;
+  });
+  const data = days.map((day) => {
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+    const cents = orders
+      .filter((o) => {
+        const t = new Date(o.date).getTime();
+        return t >= day.getTime() && t < next.getTime();
+      })
+      .reduce((s, o) => s + o.totalCents, 0);
+    return Math.round(cents / 100);
+  });
+  const labels = days.map((d) => d.toLocaleDateString("en-ZA", { weekday: "short" }));
+  return { data, labels };
+}
 
 export default async function AdminOverview() {
   const [adminOrders, applications, activeSellers, commissionPct] = await Promise.all([
@@ -24,6 +45,7 @@ export default async function AdminOverview() {
     .filter((o) => new Date(o.date).getTime() >= cutoff)
     .reduce((s, o) => s + o.totalCents, 0);
   const commissionCents = Math.round(gmvCents * (commissionPct / 100));
+  const revenue = last7DayRevenue(adminOrders);
 
   return (
     <>
@@ -38,7 +60,7 @@ export default async function AdminOverview() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <SectionCard title="Revenue — last 7 days" className="lg:col-span-2">
-          <div className="p-5"><MiniBarChart data={adminRevenueTrend} labels={DAY_LABELS} /></div>
+          <div className="p-5"><MiniBarChart data={revenue.data} labels={revenue.labels} /></div>
         </SectionCard>
 
         <SectionCard

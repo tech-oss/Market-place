@@ -6,12 +6,8 @@ import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ProductGrid } from "@/components/shared/product-grid";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StarRating } from "@/components/shared/star-rating";
-import { getProductsBySeller, getSellerBySlug, sellers } from "@/mocks";
+import { getSellerStorefront } from "@/lib/data/products";
 import { formatCount } from "@/lib/format";
-
-export function generateStaticParams() {
-  return sellers.map((s) => ({ slug: s.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -19,9 +15,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const seller = getSellerBySlug(slug);
-  return seller
-    ? { title: seller.name, description: `${seller.name} — verified motorcycle parts seller in ${seller.location}.` }
+  const store = await getSellerStorefront(slug);
+  return store
+    ? { title: store.seller.name, description: `${store.seller.name} — verified motorcycle parts seller in ${store.seller.location}.` }
     : { title: "Seller not found" };
 }
 
@@ -31,10 +27,10 @@ export default async function SellerPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const seller = getSellerBySlug(slug);
-  if (!seller) notFound();
+  const store = await getSellerStorefront(slug);
+  if (!store) notFound();
 
-  const products = getProductsBySeller(seller.id);
+  const { seller, products } = store;
   const memberYear = new Date(seller.memberSince).getFullYear();
 
   return (
@@ -69,7 +65,7 @@ export default async function SellerPage({
                 <span className="flex items-center gap-1.5">
                   <StarRating rating={seller.rating} count={seller.reviewCount} size={14} />
                 </span>
-                <span>{formatCount(seller.partCount)} parts listed</span>
+                <span>{formatCount(products.length)} parts listed</span>
               </div>
             </div>
           </div>

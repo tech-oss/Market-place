@@ -24,6 +24,11 @@ export type ProductCondition =
 
 export type SellerStatus = "pending" | "active" | "suspended" | "rejected";
 
+export type SellerType = "individual" | "parts_dealer" | "accessories_dealer";
+
+/** How a seller reached "active" status. */
+export type ApprovalType = "docs_verified" | "admin_override";
+
 export type OrderStatus =
   | "pending-payment"
   | "paid-held" // funds in escrow
@@ -191,12 +196,16 @@ export interface SellerApplication {
   ownerName: string;
   email: string;
   location: string;
-  businessType: "Dealership" | "Scrapyard" | "Workshop" | "Individual";
+  businessType: "Dealership" | "Used Parts Dealer" | "Workshop" | "Individual";
+  sellerType: SellerType;
   submittedAt: string;
   idDocUploaded: boolean;
   proofOfResidenceUploaded: boolean;
+  proofOfBankingUploaded: boolean;
   /** Storage paths (present when uploaded) so admins can view the files. */
   idDocPath?: string | null;
   proofPath?: string | null;
+  bankingPath?: string | null;
   status: SellerStatus;
+  approvalType?: ApprovalType | null;
 }

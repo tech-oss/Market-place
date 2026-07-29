@@ -16,9 +16,16 @@ export default function RegisterPage() {
   );
 }
 
+const SELLER_TYPES = [
+  { value: "individual", label: "Individual Seller" },
+  { value: "parts_dealer", label: "Parts Dealer" },
+  { value: "accessories_dealer", label: "Accessories Dealer" },
+] as const;
+
 function RegisterForm() {
   const initialRole = useSearchParams().get("role") === "seller" ? "seller" : "buyer";
   const [role, setRole] = useState<"buyer" | "seller">(initialRole);
+  const [sellerType, setSellerType] = useState<string>("individual");
   const [state, action, pending] = useActionState<AuthState, FormData>(signUp, {});
 
   return (
@@ -60,10 +67,25 @@ function RegisterForm() {
               <input name="password" type="password" required minLength={6} className="w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" />
             </div>
             {role === "seller" && (
-              <p className="rounded-lg bg-neutral-100 px-3 py-2 text-xs text-muted-foreground">
-                After signing up you&rsquo;ll complete your business profile and upload your ID &
-                proof of residence for verification.
-              </p>
+              <>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-foreground">Seller type</label>
+                  <select
+                    name="sellerType"
+                    value={sellerType}
+                    onChange={(e) => setSellerType(e.target.value)}
+                    className="w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  >
+                    {SELLER_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="rounded-lg bg-neutral-100 px-3 py-2 text-xs text-muted-foreground">
+                  After signing up you&rsquo;ll complete your business profile and upload your ID,
+                  proof of residence & proof of banking for verification.
+                </p>
+              </>
             )}
             {state.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{state.error}</p>}
             <button disabled={pending} className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60">

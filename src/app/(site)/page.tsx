@@ -9,18 +9,20 @@ import {
   TopSellers,
   BecomeSeller,
 } from "@/features/home";
+import { getPlatformStats, getTopSellers } from "@/lib/data/dashboard";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [stats, topSellers] = await Promise.all([getPlatformStats(), getTopSellers()]);
   return (
     <>
-      <Hero />
+      <Hero stats={stats} />
       <BrandStrip />
       <CategoryGrid />
       <FeaturedProducts />
       <RecentlyAdded />
       <WhyBuy />
       <HowItWorks />
-      <TopSellers />
+      <TopSellers sellers={topSellers} />
       <BecomeSeller />
     </>
   );

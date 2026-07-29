@@ -7,7 +7,7 @@ import { updateSellerProfile } from "@/features/dashboard/actions";
 
 const field = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm";
 const labelCls = "mb-1 block text-xs font-semibold text-foreground";
-const TYPES = ["Dealership", "Scrapyard", "Workshop", "Individual"];
+const TYPES = ["Dealership", "Used Parts Dealer", "Workshop", "Individual"];
 
 export function SellerProfileForm({
   live,

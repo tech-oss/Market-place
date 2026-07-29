@@ -146,16 +146,26 @@ export async function removeListing(productId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Admin: approve or reject a seller. */
+/**
+ * Admin: approve (with or without doc review), reject, suspend or reactivate
+ * a seller. `approvalType` is only meaningful when moving to "active":
+ * "docs_verified" for a normal reviewed approval, "admin_override" when the
+ * admin is bypassing document review for a trusted seller.
+ */
 export async function setSellerStatus(
   sellerId: string,
-  status: "active" | "rejected",
+  status: "active" | "rejected" | "suspended",
+  approvalType?: "docs_verified" | "admin_override",
 ): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
   const { error } = await supabase
     .from("sellers")
-    .update({ status, verified: status === "active" })
+    .update({
+      status,
+      verified: status === "active",
+      approval_type: status === "active" ? (approvalType ?? "docs_verified") : null,
+    })
     .eq("id", sellerId);
   if (error) return { ok: false, error: error.message };
 
@@ -168,9 +178,60 @@ export async function setSellerStatus(
       .in("status", ["awaiting-verification", "pending-review"]);
   }
 
+  // On suspension, pull the seller's listings off the live marketplace.
+  if (status === "suspended") {
+    await supabase
+      .from("products")
+      .update({ status: "draft" })
+      .eq("seller_id", sellerId)
+      .eq("status", "active");
+  }
+
   revalidatePath("/admin/sellers");
+  revalidatePath("/admin/users");
   revalidatePath("/seller/listings");
   revalidatePath("/parts");
+  return { ok: true };
+}
+
+/**
+ * Admin: permanently delete a seller and wipe all their data — listings,
+ * images, fitments and wallet transactions cascade via FK; the linked
+ * profile is reverted to a plain buyer account rather than deleted (the
+ * underlying auth.users login is untouched — full account deletion needs a
+ * service-role key that isn't configured in this project).
+ */
+export async function deleteSellerPermanently(sellerId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: seller } = await supabase
+    .from("sellers").select("profile_id").eq("id", sellerId).maybeSingle();
+
+  const { error } = await supabase.from("sellers").delete().eq("id", sellerId);
+  if (error) return { ok: false, error: error.message };
+
+  if (seller?.profile_id) {
+    await supabase.from("profiles").update({ role: "buyer" }).eq("id", seller.profile_id);
+  }
+
+  revalidatePath("/admin/sellers");
+  revalidatePath("/admin/users");
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
+/** Admin: change a seller's declared seller type. */
+export async function setSellerType(
+  sellerId: string,
+  sellerType: "individual" | "parts_dealer" | "accessories_dealer",
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("sellers").update({ seller_type: sellerType }).eq("id", sellerId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/sellers");
   return { ok: true };
 }
 
@@ -241,16 +302,22 @@ export async function updateSellerProfile(input: {
   return { ok: true };
 }
 
+const KYC_COLUMNS = {
+  id: "id_doc_url",
+  proof: "proof_of_residence_url",
+  banking: "proof_of_banking_url",
+} as const;
+
 /** Seller: record an uploaded KYC document path on the seller row. */
 export async function setKycDocPath(
-  kind: "id" | "proof",
+  kind: "id" | "proof" | "banking",
   path: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
   const seller = await getCurrentSeller();
   if (!seller) return { ok: false, error: "No seller account found." };
-  const column = kind === "id" ? "id_doc_url" : "proof_of_residence_url";
+  const column = KYC_COLUMNS[kind];
   const { error } = await supabase.from("sellers").update({ [column]: path }).eq("id", seller.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/seller/profile");
