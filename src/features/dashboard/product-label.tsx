@@ -54,11 +54,11 @@ export function ProductLabel({ listing }: { listing: SellerListing }) {
   return (
     <div
       id="printable-label"
-      className="flex flex-col justify-center overflow-hidden border border-neutral-300 bg-white px-[3mm] py-[1.5mm] text-neutral-900"
+      className="flex flex-col items-center justify-center overflow-hidden border border-neutral-300 bg-white px-[3mm] py-[1.5mm] text-center text-neutral-900"
       style={{ width: "90mm", height: "33mm" }}
     >
       <Barcode value={listing.sku} />
-      <p className="mt-[0.5mm] truncate text-[3mm] leading-tight">{listing.title}</p>
+      <p className="mt-[0.5mm] w-full truncate text-[3mm] leading-tight">{listing.title}</p>
       <p className="mt-[0.3mm] text-[3.6mm] font-black leading-tight">{formatZAR(listing.priceCents)}</p>
     </div>
   );
