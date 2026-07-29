@@ -44,6 +44,55 @@ function Barcode({ value }: { value: string }) {
   return <svg ref={ref} className="w-full" />;
 }
 
+/** Collects every CSS rule already loaded on the page, as plain text. */
+function collectPageCss(): string {
+  const chunks: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      const rules = sheet.cssRules;
+      if (!rules) continue;
+      for (const rule of Array.from(rules)) chunks.push(rule.cssText);
+    } catch {
+      // Cross-origin sheet — nothing we can (or need to) copy from it.
+    }
+  }
+  return chunks.join("\n");
+}
+
+/**
+ * Prints the label in an isolated hidden iframe containing only the label's
+ * markup — not the dashboard page it's shown in. Hiding the rest of the page
+ * with visibility:hidden still leaves it in the document's layout flow, so
+ * the browser sees a full-height page and paginates it into several 33mm
+ * "pages," repeating the one visible label on every one of them (this is
+ * exactly what printed 8 copies). An isolated document has nothing else to
+ * paginate, so exactly one label prints.
+ */
+function printLabel(labelEl: HTMLElement) {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    document.body.removeChild(iframe);
+    return;
+  }
+
+  doc.open();
+  doc.write(
+    `<!DOCTYPE html><html><head><style>${collectPageCss()}\n@page{size:90mm 33mm;margin:0;}html,body{margin:0;padding:0;}</style></head><body>${labelEl.outerHTML}</body></html>`,
+  );
+  doc.close();
+
+  iframe.contentWindow?.focus();
+  iframe.contentWindow?.print();
+  setTimeout(() => document.body.removeChild(iframe), 1000);
+}
+
 /**
  * The physical label artwork (also the print target via id). Sized in mm
  * to match the seller's Zebra label stock (90mm x 33mm) exactly — the
@@ -93,7 +142,10 @@ export function LabelDialog({
 
         <div className="mt-5 flex gap-3">
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              const label = document.getElementById("printable-label");
+              if (label) printLabel(label);
+            }}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
           >
             <Printer className="size-4" /> Print label
