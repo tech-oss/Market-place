@@ -141,6 +141,11 @@
 }
 
 /* Print isolation for inventory labels: only #printable-label is printed. */
+/* Matches the seller's Zebra label stock (90mm x 33mm) exactly. */
+@page {
+  size: 90mm 33mm;
+  margin: 0;
+}
 @media print {
   body * {
     visibility: hidden;
@@ -154,6 +159,8 @@
     left: 0;
     top: 0;
     margin: 0;
+    width: 90mm !important;
+    height: 33mm !important;
     box-shadow: none !important;
     border: none !important;
   }

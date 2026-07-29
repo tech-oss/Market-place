@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
-import QRCode from "qrcode";
 import { Printer, X } from "lucide-react";
 import { formatZAR, conditionLabel } from "@/lib/format";
 import { sanitizeForCode128 } from "@/lib/barcode";
@@ -21,10 +20,10 @@ function Barcode({ value }: { value: string }) {
     try {
       JsBarcode(ref.current, safeValue || " ", {
         format: "CODE128",
-        width: 1.6,
-        height: 46,
+        width: 1.3,
+        height: 34,
         displayValue: true,
-        fontSize: 12,
+        fontSize: 10,
         margin: 0,
         background: "#ffffff",
         lineColor: "#111111",
@@ -37,53 +36,33 @@ function Barcode({ value }: { value: string }) {
 
   if (failed) {
     return (
-      <p className="rounded bg-red-50 px-2 py-3 text-center text-[11px] text-red-700">
-        Couldn&rsquo;t generate a barcode for this SKU — edit it to use only letters, numbers and standard symbols.
+      <p className="rounded bg-red-50 px-1 py-1 text-center text-[8px] text-red-700">
+        Invalid SKU for barcode — edit to use only letters, numbers and standard symbols.
       </p>
     );
   }
   return <svg ref={ref} className="w-full" />;
 }
 
-function QrCode({ value }: { value: string }) {
-  const [url, setUrl] = useState<string>("");
-  useEffect(() => {
-    QRCode.toDataURL(value, { margin: 0, width: 120, errorCorrectionLevel: "M" })
-      .then(setUrl)
-      .catch(() => setUrl(""));
-  }, [value]);
-  // eslint-disable-next-line @next/next/no-img-element
-  return url ? <img src={url} alt="QR code" className="size-[92px]" /> : <div className="size-[92px] bg-neutral-100" />;
-}
-
-/** The physical label artwork (also the print target via id). */
+/**
+ * The physical label artwork (also the print target via id). Sized in mm
+ * to match the seller's Zebra label stock (90mm x 33mm) exactly — the
+ * preview and the printed output use the same box so there are no
+ * surprises between what you see and what comes out of the printer.
+ */
 export function ProductLabel({ listing }: { listing: SellerListing }) {
-  const qrValue = `https://motorcycleproducts.co.za/parts/${listing.slug}`;
   return (
     <div
       id="printable-label"
-      className="w-[340px] rounded-md border border-neutral-300 bg-white p-4 text-neutral-900"
+      className="flex flex-col justify-center overflow-hidden border border-neutral-300 bg-white px-[3mm] py-[1.5mm] text-neutral-900"
+      style={{ width: "90mm", height: "33mm" }}
     >
-      <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-        <span className="grid size-6 place-items-center rounded bg-brand text-[10px] font-black text-white">
-          MP
-        </span>
-        <span className="text-[10px] font-semibold uppercase text-neutral-500">
-          {conditionLabel(listing.condition)}
-        </span>
-      </div>
-
-      <div className="mt-2 flex gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{listing.title}</p>
-          <p className="mt-0.5 text-[11px] text-neutral-500">SKU: {listing.sku}</p>
-          <p className="mt-1 text-lg font-black">{formatZAR(listing.priceCents)}</p>
-          <p className="text-[11px] text-neutral-500">Bin: A-{listing.sku.slice(-2)} · Qty: {listing.stock}</p>
-        </div>
-        <QrCode value={qrValue} />
-      </div>
-
-      <div className="mt-2 border-t border-neutral-200 pt-2">
+      <p className="truncate text-[3.2mm] font-bold leading-tight">{listing.title}</p>
+      <p className="mt-[0.3mm] truncate text-[2.4mm] leading-tight text-neutral-500">
+        SKU: {listing.sku} · {conditionLabel(listing.condition)}
+      </p>
+      <p className="mt-[0.3mm] text-[3.6mm] font-black leading-tight">{formatZAR(listing.priceCents)}</p>
+      <div className="mt-[0.5mm]">
         <Barcode value={listing.sku} />
       </div>
     </div>
