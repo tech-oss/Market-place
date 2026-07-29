@@ -7,6 +7,17 @@ import { formatZAR } from "@/lib/format";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { SellerListing } from "@/types";
 
+const BARCODE_OPTS = {
+  format: "CODE128" as const,
+  width: 1.4,
+  height: 42,
+  displayValue: true,
+  fontSize: 11,
+  margin: 0,
+  background: "#ffffff",
+  lineColor: "#111111",
+};
+
 function Barcode({ value }: { value: string }) {
   const ref = useRef<SVGSVGElement>(null);
   const [failed, setFailed] = useState(false);
@@ -18,16 +29,7 @@ function Barcode({ value }: { value: string }) {
     // renderer or silently print a blank/garbled barcode.
     const safeValue = sanitizeForCode128(value);
     try {
-      JsBarcode(ref.current, safeValue || " ", {
-        format: "CODE128",
-        width: 1.4,
-        height: 42,
-        displayValue: true,
-        fontSize: 11,
-        margin: 0,
-        background: "#ffffff",
-        lineColor: "#111111",
-      });
+      JsBarcode(ref.current, safeValue || " ", BARCODE_OPTS);
       setFailed(false);
     } catch {
       setFailed(true);
@@ -44,31 +46,66 @@ function Barcode({ value }: { value: string }) {
   return <svg ref={ref} className="w-full" />;
 }
 
-/** Collects every CSS rule already loaded on the page, as plain text. */
-function collectPageCss(): string {
-  const chunks: string[] = [];
-  for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      const rules = sheet.cssRules;
-      if (!rules) continue;
-      for (const rule of Array.from(rules)) chunks.push(rule.cssText);
-    } catch {
-      // Cross-origin sheet — nothing we can (or need to) copy from it.
-    }
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Builds the barcode as a standalone SVG string — independent of any mounted component. */
+function buildBarcodeSvg(sku: string): string {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  try {
+    JsBarcode(svg, sanitizeForCode128(sku) || " ", BARCODE_OPTS);
+  } catch {
+    return "";
   }
-  return chunks.join("\n");
+  return svg.outerHTML;
 }
 
 /**
- * Prints the label in an isolated hidden iframe containing only the label's
- * markup — not the dashboard page it's shown in. Hiding the rest of the page
- * with visibility:hidden still leaves it in the document's layout flow, so
- * the browser sees a full-height page and paginates it into several 33mm
- * "pages," repeating the one visible label on every one of them (this is
- * exactly what printed 8 copies). An isolated document has nothing else to
- * paginate, so exactly one label prints.
+ * Prints the label in an isolated hidden iframe with its own fully
+ * self-contained, minimal stylesheet — no dependency on the app's compiled
+ * CSS at all. Two earlier attempts both over-printed (8–9 copies): hiding
+ * the rest of the dashboard with visibility:hidden still left it in the
+ * document's layout flow, and later, copying the app's *entire* stylesheet
+ * into the print document risked pulling in a rule that stretched the
+ * body/html height (e.g. a min-height reset) well past one 33mm page. This
+ * version defines every style itself, so nothing external can inflate the
+ * page count.
  */
-function printLabel(labelEl: HTMLElement) {
+function printLabel(listing: SellerListing) {
+  const barcodeSvg = buildBarcodeSvg(listing.sku);
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @page { size: 90mm 33mm; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 90mm; height: 33mm; overflow: hidden; font-family: Arial, Helvetica, sans-serif; }
+  .label {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 90mm; height: 33mm; padding: 1.5mm 3mm; text-align: center; overflow: hidden;
+  }
+  .label svg { max-width: 100%; }
+  .title {
+    margin-top: 0.5mm; font-size: 3mm; line-height: 1.1; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .price { margin-top: 0.3mm; font-size: 3.6mm; font-weight: 900; line-height: 1.1; }
+</style>
+</head>
+<body>
+  <div class="label">
+    ${barcodeSvg}
+    <p class="title">${escapeHtml(listing.title)}</p>
+    <p class="price">${escapeHtml(formatZAR(listing.priceCents))}</p>
+  </div>
+</body>
+</html>`;
+
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.width = "0";
@@ -83,9 +120,7 @@ function printLabel(labelEl: HTMLElement) {
   }
 
   doc.open();
-  doc.write(
-    `<!DOCTYPE html><html><head><style>${collectPageCss()}\n@page{size:90mm 33mm;margin:0;}html,body{margin:0;padding:0;}</style></head><body>${labelEl.outerHTML}</body></html>`,
-  );
+  doc.write(html);
   doc.close();
 
   iframe.contentWindow?.focus();
@@ -142,10 +177,7 @@ export function LabelDialog({
 
         <div className="mt-5 flex gap-3">
           <button
-            onClick={() => {
-              const label = document.getElementById("printable-label");
-              if (label) printLabel(label);
-            }}
+            onClick={() => printLabel(listing)}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
           >
             <Printer className="size-4" /> Print label
