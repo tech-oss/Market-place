@@ -13,10 +13,12 @@ export function CountUp({ value, className }: { value: string; className?: strin
   const reduce = useReducedMotion();
   const [display, setDisplay] = useState(reduce ? value : "0");
 
-  // Parse the numeric core out of the string, keeping prefix/suffix.
-  const match = value.match(/^([^\d]*)([\d,.]+)(.*)$/);
-
   useEffect(() => {
+    // Parse the numeric core out of the string, keeping prefix/suffix. Computed
+    // inside the effect so it isn't a fresh array identity on every render —
+    // otherwise each setDisplay frame would retrigger the effect, cancel the
+    // in-flight animation and restart it, pinning the value near zero.
+    const match = value.match(/^([^\d]*)([\d,.]+)(.*)$/);
     if (!inView || reduce || !match) {
       if (!match) setDisplay(value);
       return;
@@ -41,7 +43,7 @@ export function CountUp({ value, className }: { value: string; className?: strin
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, reduce, value, match]);
+  }, [inView, reduce, value]);
 
   return (
     <span ref={ref} className={className}>
