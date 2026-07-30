@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { Reveal } from "@/components/shared/reveal";
-import { brands } from "@/mocks";
+import { getBikeMakes } from "@/lib/data/products";
 import { formatCount } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   description: "Browse motorcycle parts by brand — BMW, Yamaha, Honda, KTM, Suzuki and more.",
 };
 
-export default function BrandsPage() {
+export default async function BrandsPage() {
+  const brands = await getBikeMakes();
   return (
     <>
       <PageHeader

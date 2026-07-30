@@ -6,6 +6,7 @@ import { categories, conditionOptions } from "@/mocks";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
+import type { BikeMake } from "@/lib/data/products";
 
 export interface ListingInput {
   title: string;
@@ -31,9 +32,11 @@ const labelCls = "mb-1 block text-xs font-semibold text-foreground";
 export function NewListingDialog({
   onClose,
   onCreate,
+  bikeMakes,
 }: {
   onClose: () => void;
   onCreate: (listing: SellerListing, input: ListingInput) => void;
+  bikeMakes: BikeMake[];
 }) {
   const [title, setTitle] = useState("");
   const [categorySlug, setCategorySlug] = useState(categories[0].slug);
@@ -43,7 +46,7 @@ export function NewListingDialog({
   const [sku, setSku] = useState("");
   const [oem, setOem] = useState("");
   const [bin, setBin] = useState("");
-  const [brand, setBrand] = useState("");
+  const [brand, setBrand] = useState(bikeMakes[0]?.name ?? "");
   const [model, setModel] = useState("");
   const [years, setYears] = useState("");
   const [shipNational, setShipNational] = useState("");
@@ -234,7 +237,9 @@ export function NewListingDialog({
           <div className="sm:col-span-2">
             <label className={labelCls}>Compatibility (make / model / years)</label>
             <div className="grid grid-cols-3 gap-3">
-              <input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="BMW" className={field} />
+              <select value={brand} onChange={(e) => setBrand(e.target.value)} className={field}>
+                {bikeMakes.map((m) => <option key={m.slug} value={m.name}>{m.name}</option>)}
+              </select>
               <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="S1000RR" className={field} />
               <input value={years} onChange={(e) => setYears(e.target.value)} placeholder="2019–2023" className={field} />
             </div>

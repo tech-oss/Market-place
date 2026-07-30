@@ -117,6 +117,47 @@ export async function getProductReviews(productId: string): Promise<ProductRevie
   }));
 }
 
+export interface BikeMake {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  partCount: number;
+}
+
+/**
+ * Motorcycle makes from the `bike_makes` table, each annotated with the
+ * live count of active listings whose brand matches that make (a listing's
+ * "brand" is the bike make it's compatible with — see createListing).
+ * Falls back to the static mock list (zero counts) when unconfigured.
+ */
+export async function getBikeMakes(): Promise<BikeMake[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    const { brands } = await import("@/mocks");
+    return brands.map((b) => ({ id: b.id, name: b.name, slug: b.slug, logo: b.logo, partCount: 0 }));
+  }
+
+  const [{ data: makes }, { data: products }] = await Promise.all([
+    supabase.from("bike_makes").select("id,name,slug,logo").order("sort_order"),
+    supabase.from("products").select("brand_name").eq("status", "active"),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const p of products ?? []) {
+    const key = (p.brand_name ?? "").toLowerCase();
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return (makes ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    slug: m.slug,
+    logo: m.logo,
+    partCount: counts.get(m.name.toLowerCase()) ?? 0,
+  }));
+}
+
 export interface PublicSeller {
   id: string;
   name: string;

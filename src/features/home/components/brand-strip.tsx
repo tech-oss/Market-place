@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
-import { brands } from "@/mocks";
+import { getBikeMakes } from "@/lib/data/products";
 import { formatCount } from "@/lib/format";
 
 /** Section 02 — Browse by Brand. */
-export function BrandStrip() {
+export async function BrandStrip() {
+  const brands = (await getBikeMakes()).slice(0, 8);
   return (
     <section className="py-10">
       <Container>
