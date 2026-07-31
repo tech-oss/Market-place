@@ -117,7 +117,7 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
 
   const { data } = await supabase
     .from("order_items")
-    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_cents, placed_at)")
+    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at)")
     .eq("seller_id", seller.id);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -127,6 +127,7 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
       id: o?.id, reference: o?.reference, productTitle: row.title, productId: row.product_id,
       buyerName: o?.buyer_name ?? "Buyer", qty: row.qty, totalCents: row.price_cents * row.qty,
       status: o?.status, courier: o?.courier ?? undefined, tracking: o?.tracking ?? undefined,
+      shippingService: o?.shipping_service ?? undefined, shippingNote: o?.shipping_note ?? undefined,
       shippingCents: o?.shipping_cents ?? undefined, placedAt: o?.placed_at,
     };
   });
@@ -185,6 +186,10 @@ export interface BuyerOrderView {
   status: OrderStatus;
   totalCents: number;
   placedAt: string;
+  courier?: string;
+  tracking?: string;
+  shippingService?: string;
+  shippingNote?: string;
   items: { title: string; productSlug: string | null; qty: number; priceCents: number }[];
 }
 
@@ -197,7 +202,7 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
 
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, status, total_cents, placed_at, order_items(title, qty, price_cents, product:products(slug))")
+    .select("id, reference, status, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, order_items(title, qty, price_cents, product:products(slug))")
     .eq("buyer_id", user.id)
     .order("placed_at", { ascending: false });
 
@@ -208,6 +213,10 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
     status: o.status,
     totalCents: o.total_cents,
     placedAt: o.placed_at,
+    courier: o.courier ?? undefined,
+    tracking: o.tracking ?? undefined,
+    shippingService: o.shipping_service ?? undefined,
+    shippingNote: o.shipping_note ?? undefined,
     items: (o.order_items ?? []).map((it: any) => {
       const prod = Array.isArray(it.product) ? it.product[0] : it.product;
       return { title: it.title, productSlug: prod?.slug ?? null, qty: it.qty, priceCents: it.price_cents };
@@ -265,6 +274,9 @@ export interface AdminOrderView {
   status: string;
   escrow: "held" | "released" | "refunded";
   date: string;
+  courier?: string;
+  tracking?: string;
+  shippingService?: string;
 }
 
 const ESCROW_FROM_STATUS = (status: string): "held" | "released" | "refunded" =>
@@ -527,7 +539,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, total_cents, placed_at, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, order_items(seller_id, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -538,6 +550,8 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       id: o.id, reference: o.reference, seller: sellerObj?.name ?? "—",
       buyer: o.buyer_name ?? "—", totalCents: o.total_cents,
       status: o.status, escrow: ESCROW_FROM_STATUS(o.status), date: o.placed_at,
+      courier: o.courier ?? undefined, tracking: o.tracking ?? undefined,
+      shippingService: o.shipping_service ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */

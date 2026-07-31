@@ -115,6 +115,15 @@ export default async function AccountPage() {
                           )}
                           {extra > 0 && <span className="text-sm text-muted-foreground"> + {extra} more</span>}
                           <p className="text-sm text-muted-foreground">{formatZAR(order.totalCents)}</p>
+                          {order.tracking && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Shipped via <span className="font-medium text-foreground">{order.courier}</span> · Tracking: {order.tracking}
+                              {order.shippingService ? ` · ${order.shippingService}` : ""}
+                            </p>
+                          )}
+                          {order.shippingNote && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">Note: {order.shippingNote}</p>
+                          )}
                         </div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
                           {meta.label}

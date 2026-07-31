@@ -36,7 +36,6 @@ export interface ShippingAddressInput {
 export async function placeOrder(input: {
   lines: OrderLineInput[];
   shippingCents: number;
-  courier: string;
   shippingAddress: ShippingAddressInput;
 }): Promise<PlaceOrderResult> {
   const supabase = await createClient();
@@ -61,7 +60,6 @@ export async function placeOrder(input: {
       subtotal_cents: subtotal,
       shipping_cents: input.shippingCents,
       total_cents: subtotal + input.shippingCents,
-      courier: input.courier,
       shipping_name: input.shippingAddress.name,
       shipping_phone: input.shippingAddress.phone,
       shipping_address: input.shippingAddress.address,

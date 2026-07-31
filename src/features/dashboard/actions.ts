@@ -283,15 +283,23 @@ export async function markOrderShipped(
   orderId: string,
   courier: string,
   tracking: string,
+  shippingService?: string,
+  note?: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
   const { error } = await supabase
     .from("orders")
-    .update({ status: "shipped", courier, tracking })
+    .update({
+      status: "shipped", courier, tracking,
+      shipping_service: shippingService || null,
+      shipping_note: note || null,
+    })
     .eq("id", orderId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/seller/orders");
+  revalidatePath("/admin/orders");
+  revalidatePath("/account");
   return { ok: true };
 }
 

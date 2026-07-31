@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Lock, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Lock, ShieldCheck, Truck } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,15 +13,8 @@ import { useCart } from "@/features/cart/cart-context";
 import { placeOrder } from "@/features/cart/actions";
 import { ShoppingCart } from "lucide-react";
 
-const COURIERS = [
-  { id: "pudo", label: "PUDO Locker-to-Locker", cost: 6000, eta: "2–3 business days" },
-  { id: "courierguy", label: "The Courier Guy", cost: 9900, eta: "1–2 business days" },
-  { id: "aramex", label: "Aramex", cost: 11500, eta: "1–2 business days" },
-];
-
 export default function CheckoutPage() {
   const { lines, subtotalCents, clear } = useCart();
-  const [courier, setCourier] = useState(COURIERS[0].id);
   const [placed, setPlaced] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,10 +25,8 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
 
-  // Seller-set shipping (per product) takes precedence; else the courier flat rate.
-  const sellerShipping = lines.reduce((s, l) => s + (l.product.shippingCents ?? 0), 0);
-  const courierCost = COURIERS.find((c) => c.id === courier)?.cost ?? 0;
-  const shipping = sellerShipping > 0 ? sellerShipping : courierCost;
+  // Each seller sets their own shipping cost per product — no platform-wide courier picker.
+  const shipping = lines.reduce((s, l) => s + (l.product.shippingCents ?? 0), 0);
   const total = subtotalCents + shipping;
 
   const submit = async (e: React.FormEvent) => {
@@ -51,7 +42,6 @@ export default function CheckoutPage() {
         qty: l.qty,
       })),
       shippingCents: shipping,
-      courier: COURIERS.find((c) => c.id === courier)?.label ?? courier,
       shippingAddress: { name, phone, address, city, postalCode },
     });
     setSubmitting(false);
@@ -116,33 +106,16 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          {/* Courier */}
+          {/* Delivery */}
           <section className="rounded-2xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-lg font-bold text-foreground">Delivery Method</h2>
-            <div className="space-y-3">
-              {COURIERS.map((c) => (
-                <label
-                  key={c.id}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors ${
-                    courier === c.id ? "border-brand bg-brand/5" : "border-input"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="courier"
-                    value={c.id}
-                    checked={courier === c.id}
-                    onChange={() => setCourier(c.id)}
-                    className="accent-brand"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">{c.label}</p>
-                    <p className="text-xs text-muted-foreground">{c.eta}</p>
-                  </div>
-                  <span className="text-sm font-bold text-foreground">{formatZAR(c.cost)}</span>
-                </label>
-              ))}
-            </div>
+            <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-foreground">
+              <Truck className="size-4" /> Delivery
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Each seller arranges and ships your part with their own courier. The shipping
+              cost shown below is what they charge for this order — once they dispatch it,
+              you&rsquo;ll see the courier and tracking number on your order.
+            </p>
           </section>
 
           {/* Payment (escrow) */}

@@ -9,29 +9,37 @@ import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { markOrderShipped } from "@/features/dashboard/actions";
 import type { SellerOrder } from "@/types";
 
-const COURIERS = ["PUDO", "The Courier Guy", "Aramex", "RAM", "PostNet"];
+const field = "w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30";
+const labelCls = "mb-1 block text-xs font-semibold text-foreground";
 
 function ShipDialog({ order, onClose, onShip }: {
   order: SellerOrder;
   onClose: () => void;
-  onShip: (courier: string, tracking: string) => void;
+  onShip: (courier: string, tracking: string, service: string, note: string) => void;
 }) {
-  const [courier, setCourier] = useState(COURIERS[0]);
+  const [courier, setCourier] = useState("");
   const [tracking, setTracking] = useState("");
+  const [service, setService] = useState("");
+  const [note, setNote] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <form onSubmit={(e) => { e.preventDefault(); onShip(courier, tracking); }} className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <form onSubmit={(e) => { e.preventDefault(); onShip(courier, tracking, service, note); }} className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-bold text-foreground">Mark {order.reference} as shipped</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-foreground"><X className="size-5" /></button>
         </div>
-        <label className="mb-1 block text-xs font-semibold text-foreground">Courier</label>
-        <select value={courier} onChange={(e) => setCourier(e.target.value)} className="mb-4 w-full rounded-lg border border-input px-3 py-2 text-sm">
-          {COURIERS.map((c) => <option key={c}>{c}</option>)}
-        </select>
-        <label className="mb-1 block text-xs font-semibold text-foreground">Tracking number</label>
-        <input required value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="CG1234567ZA" className="mb-5 w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" />
+        <p className="mb-4 text-xs text-muted-foreground">
+          Tell the buyer and admin how you shipped this order — your own courier, not a fixed platform list.
+        </p>
+        <label className={labelCls}>Courier / delivery provider</label>
+        <input required value={courier} onChange={(e) => setCourier(e.target.value)} placeholder="e.g. The Courier Guy, PUDO, self-delivery…" className={`${field} mb-4`} />
+        <label className={labelCls}>Tracking / shipment number</label>
+        <input required value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="CG1234567ZA" className={`${field} mb-4`} />
+        <label className={labelCls}>Shipping service <span className="font-normal text-muted-foreground">— optional</span></label>
+        <input value={service} onChange={(e) => setService(e.target.value)} placeholder="e.g. Overnight, Standard, Locker-to-locker" className={`${field} mb-4`} />
+        <label className={labelCls}>Note for buyer <span className="font-normal text-muted-foreground">— optional</span></label>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Anything else the buyer should know" className={`${field} mb-5 resize-none`} />
         <button type="submit" className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90">Confirm shipment</button>
       </form>
     </div>
@@ -67,7 +75,11 @@ export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; l
                 <tr key={o.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-3">
                     <p className="font-medium text-foreground">{o.reference}</p>
-                    {o.tracking && <p className="text-xs text-muted-foreground">{o.courier} · {o.tracking}</p>}
+                    {o.tracking && (
+                      <p className="text-xs text-muted-foreground">
+                        {o.courier} · {o.tracking}{o.shippingService ? ` · ${o.shippingService}` : ""}
+                      </p>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">{o.productTitle} × {o.qty}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.buyerName}</td>
@@ -91,10 +103,10 @@ export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; l
         <ShipDialog
           order={shipping}
           onClose={() => setShipping(null)}
-          onShip={async (courier, tracking) => {
-            setOrders((prev) => prev.map((o) => (o.id === shipping.id ? { ...o, status: "shipped", courier, tracking } : o)));
+          onShip={async (courier, tracking, service, note) => {
+            setOrders((prev) => prev.map((o) => (o.id === shipping.id ? { ...o, status: "shipped", courier, tracking, shippingService: service || undefined, shippingNote: note || undefined } : o)));
             setShipping(null);
-            if (live) { const res = await markOrderShipped(shipping.id, courier, tracking); if (res.ok && !res.fellBack) router.refresh(); }
+            if (live) { const res = await markOrderShipped(shipping.id, courier, tracking, service, note); if (res.ok && !res.fellBack) router.refresh(); }
           }}
         />
       )}

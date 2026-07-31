@@ -50,7 +50,14 @@ export function EscrowBoard({
           <tbody className="divide-y divide-border">
             {orders.map((o) => (
               <tr key={o.id} className="hover:bg-neutral-50">
-                <td className="px-5 py-3 font-medium text-foreground">{o.reference}</td>
+                <td className="px-5 py-3">
+                  <p className="font-medium text-foreground">{o.reference}</p>
+                  {o.tracking && (
+                    <p className="text-xs text-muted-foreground">
+                      {o.courier} · {o.tracking}{o.shippingService ? ` · ${o.shippingService}` : ""}
+                    </p>
+                  )}
+                </td>
                 <td className="px-5 py-3 text-muted-foreground">{o.seller}</td>
                 <td className="px-5 py-3 text-muted-foreground">{o.buyer}</td>
                 <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>

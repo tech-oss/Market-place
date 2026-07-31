@@ -176,6 +176,8 @@ export interface SellerOrder {
   status: OrderStatus;
   courier?: string;
   tracking?: string;
+  shippingService?: string;
+  shippingNote?: string;
   shippingCents?: number;
   placedAt: string;
 }
