@@ -43,7 +43,7 @@ export function EscrowBoard({
               <th className="px-5 py-3 font-medium">Buyer</th>
               <th className="px-5 py-3 font-medium">Total</th>
               <th className="px-5 py-3 font-medium">Commission</th>
-              <th className="px-5 py-3 font-medium">Escrow</th>
+              <th className="px-5 py-3 font-medium">Buyer Protection</th>
               <th className="px-5 py-3 text-right font-medium">Action</th>
             </tr>
           </thead>

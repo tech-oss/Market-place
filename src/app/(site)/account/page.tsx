@@ -13,12 +13,12 @@ import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = {
   title: "My Account",
-  description: "Your orders, escrow status, addresses and seller tools.",
+  description: "Your orders, buyer protection status, addresses and seller tools.",
 };
 
 const STATUS_META: Record<OrderStatus, { label: string; className: string }> = {
   "pending-payment": { label: "Pending Payment", className: "bg-amber-100 text-amber-800" },
-  "paid-held": { label: "In Escrow", className: "bg-blue-100 text-blue-800" },
+  "paid-held": { label: "In Buyer Protection", className: "bg-blue-100 text-blue-800" },
   shipped: { label: "Shipped", className: "bg-indigo-100 text-indigo-800" },
   delivered: { label: "Delivered", className: "bg-teal-100 text-teal-800" },
   confirmed: { label: "Confirmed", className: "bg-emerald-100 text-emerald-800" },
@@ -84,7 +84,7 @@ export default async function AccountPage() {
                 <EmptyState
                   icon={Package}
                   title="No orders yet"
-                  description="When you buy a part, your orders and their escrow status show up here."
+                  description="When you buy a part, your orders and their buyer protection status show up here."
                   action={{ label: "Shop parts", href: "/parts" }}
                 />
               ) : (
@@ -152,7 +152,7 @@ export default async function AccountPage() {
                     <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand"><ShieldCheck className="size-5" /></span>
                     <div className="flex-1">
                       <p className="font-semibold text-foreground">Admin Console</p>
-                      <p className="text-xs text-muted-foreground">Approvals, escrow & commission</p>
+                      <p className="text-xs text-muted-foreground">Approvals, buyer protection & commission</p>
                     </div>
                     <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </Link>

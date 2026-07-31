@@ -8,7 +8,7 @@ export default async function AdminOrdersPage() {
 
   return (
     <>
-      <PageHeading title="Orders & Escrow" description="Fulfil orders and track escrow status." />
+      <PageHeading title="Orders & Buyer Protection" description="Fulfil orders and track buyer protection status." />
       <EscrowBoard initial={orders} commissionPct={pct} live={isSupabaseConfigured()} />
     </>
   );

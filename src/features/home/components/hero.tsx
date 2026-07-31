@@ -30,7 +30,7 @@ interface PlatformStat {
 }
 
 const TRUST = [
-  { icon: ShieldCheck, title: "Escrow Protected", body: "Your money is safe until delivery" },
+  { icon: ShieldCheck, title: "Buyer Protection", body: "Your money is safe until delivery" },
   { icon: ShieldCheck, title: "Verified Sellers", body: "Approved businesses you can trust" },
   { icon: Truck, title: "Fast Shipping", body: "Nationwide delivery through top couriers" },
   { icon: RotateCcw, title: "Easy Returns", body: "Hassle-free returns if it's not right" },

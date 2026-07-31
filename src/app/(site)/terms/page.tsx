@@ -34,7 +34,7 @@ export default async function TermsPage() {
             trade once approved.
           </p>
 
-          <h2>3. Escrow payments</h2>
+          <h2>3. Buyer Protection payments</h2>
           <p>
             Buyer payments are held by the platform and released to the seller only after
             the buyer confirms delivery. A flat commission of <strong>{pct}%</strong> is
@@ -50,7 +50,7 @@ export default async function TermsPage() {
           <h2>5. Returns & disputes</h2>
           <p>
             Buyers may raise a return within 7 days of delivery. The platform mediates
-            disputes and may refund the buyer from the escrow hold where appropriate.
+            disputes and may refund the buyer from the Buyer Protection hold where appropriate.
           </p>
 
           <h2>6. Liability</h2>

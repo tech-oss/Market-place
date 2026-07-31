@@ -6,7 +6,7 @@ export default async function SellerOrdersPage() {
   const [orders, seller] = await Promise.all([getSellerOrders(), getCurrentSeller()]);
   return (
     <>
-      <PageHeading title="Orders" description="Fulfil orders and track escrow status." />
+      <PageHeading title="Orders" description="Fulfil orders and track buyer protection status." />
       <SellerOrdersBoard initial={orders} live={Boolean(seller)} />
     </>
   );

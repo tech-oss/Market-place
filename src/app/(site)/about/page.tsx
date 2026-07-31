@@ -7,7 +7,7 @@ import { getPlatformStats } from "@/lib/data/dashboard";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Motorcycle Products is South Africa's trusted marketplace for new and used motorcycle parts, built on escrow-protected payments.",
+    "Motorcycle Products is South Africa's trusted marketplace for new and used motorcycle parts, built on Buyer Protection payments.",
 };
 
 export default async function AboutPage() {
@@ -25,8 +25,8 @@ export default async function AboutPage() {
           <p>
             For years, buying used motorcycle parts in South Africa meant taking a
             leap of faith — paying by EFT and hoping the part turned up. We built
-            Motorcycle Products to end that. Every transaction is protected by an{" "}
-            <strong>escrow system</strong>: your money is held safely and only released
+            Motorcycle Products to end that. Every transaction is protected by our{" "}
+            <strong>Buyer Protection</strong>: your money is held safely and only released
             to the seller once you&rsquo;ve received your part and confirmed you&rsquo;re happy.
           </p>
 

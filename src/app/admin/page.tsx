@@ -83,13 +83,13 @@ export default async function AdminOverview() {
         <div className="rounded-2xl border border-border bg-white p-5 lg:col-span-1">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertTriangle className="size-5" />
-            <p className="font-bold text-foreground">{held.length} orders in escrow</p>
+            <p className="font-bold text-foreground">{held.length} orders in Buyer Protection</p>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {formatZAR(held.reduce((s, o) => s + o.totalCents, 0))} currently held, awaiting delivery confirmation.
           </p>
           <Link href="/admin/orders" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
-            Manage escrow →
+            Manage Buyer Protection →
           </Link>
         </div>
 
@@ -101,7 +101,7 @@ export default async function AdminOverview() {
                   <th className="px-5 py-3 font-medium">Order</th>
                   <th className="px-5 py-3 font-medium">Seller</th>
                   <th className="px-5 py-3 font-medium">Total</th>
-                  <th className="px-5 py-3 font-medium">Escrow</th>
+                  <th className="px-5 py-3 font-medium">Buyer Protection</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

@@ -64,7 +64,7 @@ export default function CheckoutPage() {
             <p className="mt-1 text-sm font-semibold text-foreground">Order {reference}</p>
           )}
           <p className="mt-2 text-sm text-muted-foreground">
-            Your payment is held securely in escrow. We&rsquo;ll notify you when the
+            Your payment is held securely under Buyer Protection. We&rsquo;ll notify you when the
             seller ships your parts. Release the funds once you&rsquo;ve confirmed delivery.
           </p>
           <Link href="/account" className={cn(buttonVariants(), "mt-6")}>
@@ -125,7 +125,7 @@ export default function CheckoutPage() {
             </h2>
             <p className="text-sm text-muted-foreground">
               Payment integration (PayFast / Ozow / card) is wired in Step 3. For this
-              preview, placing the order simulates funding the escrow hold.
+              preview, placing the order simulates funding the Buyer Protection hold.
             </p>
           </section>
         </div>
@@ -167,7 +167,7 @@ export default function CheckoutPage() {
           </Button>
           <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
-            Funds are held in escrow and only released to the seller after you confirm delivery.
+            Funds are held under Buyer Protection and only released to the seller after you confirm delivery.
           </p>
         </div>
       </form>

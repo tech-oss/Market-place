@@ -4,7 +4,7 @@ type Tone = "green" | "amber" | "blue" | "indigo" | "red" | "gray" | "teal";
 
 export const ORDER_STATUS_META: Record<OrderStatus, { label: string; tone: Tone }> = {
   "pending-payment": { label: "Pending Payment", tone: "amber" },
-  "paid-held": { label: "In Escrow", tone: "blue" },
+  "paid-held": { label: "In Buyer Protection", tone: "blue" },
   shipped: { label: "Shipped", tone: "indigo" },
   delivered: { label: "Delivered", tone: "teal" },
   confirmed: { label: "Confirmed", tone: "green" },

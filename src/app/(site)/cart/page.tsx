@@ -109,7 +109,7 @@ export default function CartPage() {
           </Link>
           <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
-            Your payment is held securely in escrow until you confirm delivery.
+            Your payment is held securely under Buyer Protection until you confirm delivery.
           </p>
         </div>
       </div>

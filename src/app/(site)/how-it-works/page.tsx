@@ -6,12 +6,12 @@ import { getCommissionPct } from "@/lib/data/dashboard";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "Learn how Motorcycle Products' escrow-protected marketplace works for buyers and sellers.",
+    "Learn how Motorcycle Products' Buyer Protection marketplace works for buyers and sellers.",
 };
 
 function buyerSteps(pct: number) { return [
   { n: 1, title: "Find your part", body: "Search by motorcycle, category or OEM part number and confirm fitment." },
-  { n: 2, title: "Place your order", body: "Pay securely — your money is held in escrow, not sent to the seller yet." },
+  { n: 2, title: "Place your order", body: "Pay securely — your money is held under Buyer Protection, not sent to the seller yet." },
   { n: 3, title: "Seller ships", body: "The seller dispatches your part with tracking via their chosen courier." },
   { n: 4, title: "Confirm delivery", body: "Inspect the part and confirm you're happy with your order." },
   { n: 5, title: "Payment released", body: `Only then do we release the funds to the seller, minus our ${pct}% commission.` },
@@ -56,7 +56,7 @@ export default async function HowItWorksPage() {
     <>
       <PageHeader
         title="How It Works"
-        description="A safe, simple process protected by escrow from start to finish."
+        description="A safe, simple process protected by Buyer Protection from start to finish."
         crumbs={[{ label: "Home", href: "/" }, { label: "How It Works" }]}
       />
       <Container className="py-12">

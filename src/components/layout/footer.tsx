@@ -85,7 +85,7 @@ export function Footer() {
           <Logo inverted />
           <p className="mt-4 max-w-xs text-sm text-white/50">
             South Africa&rsquo;s most trusted marketplace for new and used
-            motorcycle parts, protected by secure escrow payments.
+            motorcycle parts, protected by Buyer Protection payments.
           </p>
         </div>
 

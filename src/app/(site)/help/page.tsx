@@ -13,9 +13,9 @@ function faqGroups(pct: number) { return [
   {
     title: "Buying",
     items: [
-      { q: "How does escrow protect me?", a: "When you pay, we hold your money securely. The seller is only paid once you've received the part and confirmed you're happy. If something goes wrong, you're covered." },
+      { q: "How does Buyer Protection protect me?", a: "When you pay, we hold your money securely. The seller is only paid once you've received the part and confirmed you're happy. If something goes wrong, you're covered." },
       { q: "How do I know a part fits my bike?", a: "Every listing shows compatible make, model and year plus the OEM part number. Always cross-check the OEM number against your vehicle before buying." },
-      { q: "What if the part isn't as described?", a: "Open a dispute from your order within 7 days of delivery. If it's not resolved, we refund you from the escrow hold." },
+      { q: "What if the part isn't as described?", a: "Open a dispute from your order within 7 days of delivery. If it's not resolved, we refund you from your Buyer Protection hold." },
     ],
   },
   {

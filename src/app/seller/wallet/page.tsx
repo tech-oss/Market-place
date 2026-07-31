@@ -22,7 +22,7 @@ export default async function SellerWalletPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Available Balance" value={formatZAR(balanceCents)} icon={Wallet} />
-        <StatCard label="Pending (in escrow)" value={formatZAR(pendingCents)} icon={Clock} />
+        <StatCard label="Pending (Buyer Protection)" value={formatZAR(pendingCents)} icon={Clock} />
         <StatCard label="Platform Commission" value={`${pct}%`} icon={ArrowDownToLine} />
       </div>
 

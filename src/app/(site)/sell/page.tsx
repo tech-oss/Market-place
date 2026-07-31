@@ -17,14 +17,14 @@ import { getCommissionPct } from "@/lib/data/dashboard";
 export const metadata: Metadata = {
   title: "Sell With Us",
   description:
-    "Sell new and used motorcycle parts to buyers across South Africa. Unlimited free listings, secure escrow payouts, and printable inventory labels.",
+    "Sell new and used motorcycle parts to buyers across South Africa. Unlimited free listings, secure Buyer Protection payouts, and printable inventory labels.",
 };
 
 function benefits(pct: number) { return [
   { icon: InfinityIcon, title: "Unlimited Free Listings", body: `List as many parts as you like at no cost. You only pay a flat ${pct}% commission when an item sells.` },
   { icon: Truck, title: "Your Shipping, Your Way", body: "Set your own shipping cost per order and choose your preferred courier — PUDO, The Courier Guy, Aramex and more." },
   { icon: Printer, title: "Printable Inventory Labels", body: "Generate barcode / QR labels for every listing to keep your warehouse and stock perfectly organised." },
-  { icon: Wallet, title: "Secure, Fast Payouts", body: "Buyers pay into escrow. Funds land in your wallet as soon as the buyer confirms delivery." },
+  { icon: Wallet, title: "Secure, Fast Payouts", body: "Buyers' payments are held under Buyer Protection. Funds land in your wallet as soon as the buyer confirms delivery." },
   { icon: BadgeCheck, title: "Verified Seller Badge", body: "Approved businesses earn a trust badge that helps you win more sales." },
   { icon: FileCheck2, title: "Simple Onboarding", body: "Register your business, upload your documents, and go live once approved." },
 ]; }
@@ -55,7 +55,7 @@ export default async function SellPage() {
             </h1>
             <p className="mt-4 max-w-lg text-white/70">
               Join hundreds of trusted sellers on the country&rsquo;s leading motorcycle
-              parts marketplace. Unlimited free listings, escrow-protected payouts, and
+              parts marketplace. Unlimited free listings, Buyer Protection payouts, and
               a flat {pct}% commission — no monthly fees.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">

@@ -94,7 +94,7 @@ export function BuyBox({ product }: { product: Product }) {
       <div className="mt-5 space-y-2.5 border-t border-border pt-5 text-sm">
         <p className="flex items-center gap-2 text-muted-foreground">
           <ShieldCheck className="size-4 text-brand" />
-          Escrow protected — we hold your payment until you confirm delivery.
+          Buyer Protection — we hold your payment until you confirm delivery.
         </p>
         <p className="flex items-center gap-2 text-muted-foreground">
           <Truck className="size-4 text-brand" />

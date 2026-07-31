@@ -5,7 +5,7 @@ import { Prose } from "@/components/shared/prose";
 
 export const metadata: Metadata = {
   title: "Returns",
-  description: "Our returns and refund policy, backed by escrow buyer protection.",
+  description: "Our returns and refund policy, backed by Buyer Protection.",
 };
 
 export default function ReturnsPage() {
@@ -26,7 +26,7 @@ export default function ReturnsPage() {
 
           <h2>How refunds work</h2>
           <p>
-            Because your payment is held in escrow until you confirm delivery, refunds are
+            Because your payment is held under Buyer Protection until you confirm delivery, refunds are
             straightforward. If a return is approved, the held funds are returned to you —
             we don&rsquo;t need to chase the seller for your money.
           </p>

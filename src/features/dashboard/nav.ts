@@ -33,7 +33,7 @@ export const SELLER_NAV: DashNavItem[] = [
 export const ADMIN_NAV: DashNavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Seller Approvals", href: "/admin/sellers", icon: ShieldCheck },
-  { label: "Orders & Escrow", href: "/admin/orders", icon: Receipt },
+  { label: "Orders & Buyer Protection", href: "/admin/orders", icon: Receipt },
   { label: "Conversations", href: "/admin/messages", icon: MessageSquare },
   { label: "Listings", href: "/admin/listings", icon: Tag },
   { label: "Bike Catalog", href: "/admin/catalog", icon: Bike },

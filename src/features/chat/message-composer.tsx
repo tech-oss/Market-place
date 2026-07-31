@@ -62,7 +62,7 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
         </button>
       </form>
       <p className="mt-2 px-1 text-[11px] text-muted-foreground">
-        For your safety, sharing phone numbers, emails or external links is blocked. Keep payment in escrow on-platform.
+        For your safety, sharing phone numbers, emails or external links is blocked. Keep payment under Buyer Protection on-platform.
       </p>
     </div>
   );

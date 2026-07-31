@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | Motorcycle Products",
   },
   description:
-    "Buy and sell new and used motorcycle parts across South Africa. Escrow-protected payments, verified sellers, nationwide delivery.",
+    "Buy and sell new and used motorcycle parts across South Africa. Buyer Protection payments, verified sellers, nationwide delivery.",
   keywords: [
     "motorcycle parts",
     "used motorcycle parts",

@@ -45,7 +45,7 @@ export function CommissionForm({ initialPct, live }: { initialPct: number; live:
             </button>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
-            Applied to every completed sale before funds are released from escrow to the seller&rsquo;s wallet.
+            Applied to every completed sale before funds are released from Buyer Protection to the seller&rsquo;s wallet.
           </p>
         </div>
       </SectionCard>

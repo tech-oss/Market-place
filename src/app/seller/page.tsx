@@ -55,7 +55,7 @@ export default async function SellerOverview() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Sales (30d)" value={formatZAR(totalSalesCents)} icon={TrendingUp} trend={{ value: "12.4%", up: true }} />
         <StatCard label="Active Listings" value={String(activeListings)} icon={Package} />
-        <StatCard label="Orders in Escrow" value={String(inEscrow)} icon={Receipt} trend={{ value: "2 new", up: true }} />
+        <StatCard label="Orders in Buyer Protection" value={String(inEscrow)} icon={Receipt} trend={{ value: "2 new", up: true }} />
         <StatCard label="Wallet Balance" value={formatZAR(walletBalanceCents)} icon={Wallet} />
       </div>
 

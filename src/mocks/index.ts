@@ -275,6 +275,6 @@ export const conditionOptions: { value: string; label: string }[] = [
 /** Sample product reviews (detail page). */
 export const productReviews: Review[] = [
   { id: "rv-1", author: "Sipho M.", rating: 5, title: "Exactly as described", body: "Part arrived quickly and fit my bike perfectly. Seller communication was excellent.", createdAt: daysAgo(4) },
-  { id: "rv-2", author: "Danie v.", rating: 5, title: "Great condition used part", body: "Saved a fortune versus buying new. Escrow made me feel safe paying upfront.", createdAt: daysAgo(12) },
+  { id: "rv-2", author: "Danie v.", rating: 5, title: "Great condition used part", body: "Saved a fortune versus buying new. Buyer Protection made me feel safe paying upfront.", createdAt: daysAgo(12) },
   { id: "rv-3", author: "Thandi K.", rating: 4, title: "Good value", body: "Minor wear as expected for a used item, but works flawlessly. Would buy again.", createdAt: daysAgo(20) },
 ];

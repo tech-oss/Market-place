@@ -46,7 +46,7 @@ export const walletTxns: WalletTxn[] = [
   { id: "w-3", type: "sale", description: "Order MP-10388 · Clutch Master Cylinder", amountCents: 120000, date: daysAgo(12), status: "completed" },
   { id: "w-4", type: "commission", description: "Platform commission (7%)", amountCents: -8400, date: daysAgo(12), status: "completed" },
   { id: "w-5", type: "payout", description: "Payout to FNB •••• 4821", amountCents: -250000, date: daysAgo(14), status: "completed" },
-  { id: "w-6", type: "sale", description: "Order MP-10461 · Chain & Sprocket Kit (in escrow)", amountCents: 185000, date: daysAgo(2), status: "pending" },
+  { id: "w-6", type: "sale", description: "Order MP-10461 · Chain & Sprocket Kit (Buyer Protection)", amountCents: 185000, date: daysAgo(2), status: "pending" },
 ];
 
 /** Sales trend for the seller overview chart (last 7 days, in Rand). */
@@ -78,7 +78,7 @@ export interface AdminOrderRow {
 }
 
 export const adminOrders: AdminOrderRow[] = [
-  { reference: "MP-10482", seller: "RideFast Motorcycles", buyer: "Sipho M.", totalCents: 216000, status: "In Escrow", escrow: "held", date: daysAgo(0) },
+  { reference: "MP-10482", seller: "RideFast Motorcycles", buyer: "Sipho M.", totalCents: 216000, status: "In Buyer Protection", escrow: "held", date: daysAgo(0) },
   { reference: "MP-10480", seller: "MotoStrip SA", buyer: "Lerato N.", totalCents: 662000, status: "Shipped", escrow: "held", date: daysAgo(1) },
   { reference: "MP-10475", seller: "Cycle Salvage", buyer: "Pieter S.", totalCents: 801000, status: "Delivered", escrow: "held", date: daysAgo(2) },
   { reference: "MP-10461", seller: "RideFast Motorcycles", buyer: "Danie v.", totalCents: 194900, status: "Shipped", escrow: "held", date: daysAgo(2) },
