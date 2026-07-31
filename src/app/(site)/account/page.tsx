@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, LayoutDashboard, MapPin, Package, ShieldCheck, Store, User } from "lucide-react";
+import { ArrowRight, LayoutDashboard, Package, ShieldCheck, Store } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatZAR } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
 import { getBuyerOrders, getCommissionPct } from "@/lib/data/dashboard";
-import { signOut } from "@/features/auth/actions";
+import { AccountSidebar } from "@/features/account/account-sidebar";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = {
@@ -43,37 +43,7 @@ export default async function AccountPage() {
       />
       <Container className="py-10">
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          {/* Sidebar */}
-          <aside className="h-fit rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center gap-3">
-              <span className="grid size-12 place-items-center rounded-full bg-ink text-white">
-                <User className="size-5" />
-              </span>
-              <div>
-                <p className="font-semibold text-foreground">{displayName}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user.role} account</p>
-              </div>
-            </div>
-            <nav className="mt-5 flex flex-col text-sm">
-              {[
-                { icon: Package, label: "Orders" },
-                { icon: MapPin, label: "Addresses" },
-                { icon: User, label: "Profile" },
-              ].map((item) => (
-                <span
-                  key={item.label}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-foreground first:bg-muted first:font-medium"
-                >
-                  <item.icon className="size-4" /> {item.label}
-                </span>
-              ))}
-            </nav>
-            <form action={signOut} className="mt-3 border-t border-border pt-3">
-              <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                Sign out
-              </button>
-            </form>
-          </aside>
+          <AccountSidebar displayName={displayName} roleLabel={user.role} />
 
           {/* Main */}
           <div className="space-y-8">

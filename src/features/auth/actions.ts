@@ -51,7 +51,8 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 
   revalidatePath("/", "layout");
   // New sellers land on verification (upload ID + proof of residence + banking); they may skip.
-  redirect(role === "seller" ? "/seller/profile?welcome=1" : "/account");
+  // New buyers land on a quick, skippable profile/address step.
+  redirect(role === "seller" ? "/seller/profile?welcome=1" : "/account/profile?welcome=1");
 }
 
 export async function signOut(): Promise<void> {
