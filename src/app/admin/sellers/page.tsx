@@ -5,15 +5,15 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export default async function AdminSellersPage() {
   const apps = await getSellerApplications();
-  const pending = apps.filter((a) => a.status === "pending").length;
+  const pending = apps.filter((a) => a.status === "pending");
 
   return (
     <>
       <PageHeading
         title="Seller Approvals"
-        description={`${pending} application${pending === 1 ? "" : "s"} awaiting review.`}
+        description={`${pending.length} application${pending.length === 1 ? "" : "s"} awaiting review.`}
       />
-      <ApprovalsBoard initial={apps} live={isSupabaseConfigured()} />
+      <ApprovalsBoard initial={pending} live={isSupabaseConfigured()} />
     </>
   );
 }

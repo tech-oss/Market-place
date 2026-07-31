@@ -5,21 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ExternalLink, FileText, MapPin, ShieldAlert, X } from "lucide-react";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { getKycSignedUrl, setSellerStatus } from "@/features/dashboard/actions";
-import type { SellerApplication, SellerStatus } from "@/types";
-
-const STATUS_TONE: Record<SellerStatus, "amber" | "green" | "red" | "gray"> = {
-  pending: "amber", active: "green", rejected: "red", suspended: "gray",
-};
-
-/** Human status label — approved sellers show *how* they were approved. */
-function statusLabel(a: SellerApplication): string {
-  if (a.status === "active") {
-    return a.approvalType === "admin_override"
-      ? "Approved without docs"
-      : "Approved after doc verification";
-  }
-  return { pending: "Pending", rejected: "Rejected", suspended: "Suspended" }[a.status] ?? a.status;
-}
+import type { SellerApplication } from "@/types";
 
 const SELLER_TYPE_LABEL: Record<string, string> = {
   individual: "Individual Seller",
@@ -55,10 +41,8 @@ export function ApprovalsBoard({ initial, live }: { initial: SellerApplication[]
     status: "active" | "rejected",
     approvalType?: "docs_verified" | "admin_override",
   ) => {
-    // optimistic
-    setApps((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status, approvalType: status === "active" ? (approvalType ?? "docs_verified") : null } : a)),
-    );
+    // Once a decision is made, the application is no longer "awaiting review" — drop it from the queue.
+    setApps((prev) => prev.filter((a) => a.id !== id));
     if (live) {
       setBusy(id);
       const res = await setSellerStatus(id, status, approvalType);
@@ -66,6 +50,16 @@ export function ApprovalsBoard({ initial, live }: { initial: SellerApplication[]
       if (res.ok && !res.fellBack) router.refresh();
     }
   };
+
+  if (apps.length === 0) {
+    return (
+      <SectionCard>
+        <p className="p-8 text-center text-sm text-muted-foreground">
+          No applications awaiting review. Manage existing sellers from Users.
+        </p>
+      </SectionCard>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -77,7 +71,7 @@ export function ApprovalsBoard({ initial, live }: { initial: SellerApplication[]
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-bold text-foreground">{a.businessName}</h3>
-                  <StatusPill label={statusLabel(a)} tone={STATUS_TONE[a.status]} />
+                  <StatusPill label="Pending" tone="amber" />
                   <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
                     {SELLER_TYPE_LABEL[a.sellerType] ?? a.businessType}
                   </span>
@@ -91,43 +85,37 @@ export function ApprovalsBoard({ initial, live }: { initial: SellerApplication[]
                 </div>
               </div>
 
-              {a.status === "pending" ? (
-                <div className="flex shrink-0 flex-col items-stretch gap-2 lg:items-end">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => decide(a.id, "active", "docs_verified")}
-                      disabled={busy === a.id || !allDocs}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                      title={!allDocs ? "All three documents required for a verified approval" : undefined}
-                    >
-                      <Check className="size-4" /> Approve
-                    </button>
-                    <button
-                      onClick={() => decide(a.id, "rejected")}
-                      disabled={busy === a.id}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-input px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted"
-                    >
-                      <X className="size-4" /> Reject
-                    </button>
-                  </div>
+              <div className="flex shrink-0 flex-col items-stretch gap-2 lg:items-end">
+                <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      if (window.confirm("Approve this seller WITHOUT document verification? Use only for sellers you trust.")) {
-                        decide(a.id, "active", "admin_override");
-                      }
-                    }}
-                    disabled={busy === a.id}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
-                    title="Bypass document verification for a trusted seller"
+                    onClick={() => decide(a.id, "active", "docs_verified")}
+                    disabled={busy === a.id || !allDocs}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    title={!allDocs ? "All three documents required for a verified approval" : undefined}
                   >
-                    <ShieldAlert className="size-3.5" /> Approve without docs
+                    <Check className="size-4" /> Approve
+                  </button>
+                  <button
+                    onClick={() => decide(a.id, "rejected")}
+                    disabled={busy === a.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-input px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted"
+                  >
+                    <X className="size-4" /> Reject
                   </button>
                 </div>
-              ) : (
-                <span className="text-sm text-muted-foreground">
-                  {a.status === "active" ? "Live on marketplace" : "No action needed"}
-                </span>
-              )}
+                <button
+                  onClick={() => {
+                    if (window.confirm("Approve this seller WITHOUT document verification? Use only for sellers you trust.")) {
+                      decide(a.id, "active", "admin_override");
+                    }
+                  }}
+                  disabled={busy === a.id}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                  title="Bypass document verification for a trusted seller"
+                >
+                  <ShieldAlert className="size-3.5" /> Approve without docs
+                </button>
+              </div>
             </div>
           </SectionCard>
         );
