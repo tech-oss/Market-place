@@ -4,6 +4,7 @@ import {
   featuredProducts as mockFeatured,
   recentProducts as mockRecent,
   getProductBySlug as mockBySlug,
+  getProductById as mockById,
 } from "@/mocks";
 import type { Product } from "@/types";
 
@@ -50,6 +51,7 @@ function mapRow(r: any): Product {
     listedAt: r.listed_at,
     isFeatured: r.is_featured,
     isNew: r.is_new,
+    status: r.status,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -85,6 +87,14 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   const supabase = await createClient();
   if (!supabase) return mockBySlug(slug) ?? null;
   const { data } = await supabase.from("products").select(SELECT).eq("slug", slug).maybeSingle();
+  return data ? mapRow(data) : null;
+}
+
+/** Full product detail regardless of status — used by the admin listing view. */
+export async function getProductById(id: string): Promise<Product | null> {
+  const supabase = await createClient();
+  if (!supabase) return mockById(id) ?? null;
+  const { data } = await supabase.from("products").select(SELECT).eq("id", id).maybeSingle();
   return data ? mapRow(data) : null;
 }
 

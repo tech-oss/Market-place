@@ -250,6 +250,10 @@ export function getProductBySlug(slug: string): Product | undefined {
   return allProducts.find((p) => p.slug === slug);
 }
 
+export function getProductById(id: string): Product | undefined {
+  return allProducts.find((p) => p.id === id);
+}
+
 export function getProductsBySeller(sellerId: string): Product[] {
   return allProducts.filter((p) => p.seller.id === sellerId);
 }

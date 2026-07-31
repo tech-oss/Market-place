@@ -120,6 +120,8 @@ export interface Product {
   listedAt: string;
   isFeatured?: boolean;
   isNew?: boolean;
+  /** Moderation status — only populated when fetched via admin data helpers. */
+  status?: string;
 }
 
 /** ---------------------------------------------------------------------------

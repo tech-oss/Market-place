@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatZAR } from "@/lib/format";
 import { conditionLabel } from "@/lib/format";
@@ -57,7 +58,13 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
                   <td className="px-5 py-3"><StatusPill label={meta.label} tone={meta.tone} /></td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      {p.slug && (
+                      <Link
+                        href={`/admin/listings/${p.id}`}
+                        className="rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                      >
+                        View
+                      </Link>
+                      {p.slug && p.status === "active" && (
                         <a
                           href={`/parts/${p.slug}`}
                           target="_blank"
