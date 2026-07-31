@@ -1,26 +1,10 @@
--- Part categories as a real backend table instead of a hardcoded list, with
--- a banner image per category. Used for: the homepage "Shop by Category"
--- section, the /categories page, the "category" filter on /parts, and the
--- seller dashboard's mandatory category dropdown when listing a part.
+-- Add a banner image + explicit ordering to the existing `categories` table
+-- (created in 0001_init.sql) and seed real values, replacing the hardcoded
+-- part-count list used by the homepage "Shop by Category" section, the
+-- /categories page, and the seller dashboard's category dropdown.
 
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  name text not null unique,
-  slug text not null unique,
-  image_url text not null,
-  sort_order int not null default 0,
-  created_at timestamptz not null default now()
-);
-
-alter table public.categories enable row level security;
-
-drop policy if exists "categories public read" on public.categories;
-create policy "categories public read" on public.categories
-  for select using (true);
-
-drop policy if exists "categories admin write" on public.categories;
-create policy "categories admin write" on public.categories
-  for all using (is_admin()) with check (is_admin());
+alter table public.categories add column if not exists image_url text;
+alter table public.categories add column if not exists sort_order int not null default 0;
 
 insert into public.categories (name, slug, image_url, sort_order) values
   ('Brakes', 'brakes', 'https://images.unsplash.com/photo-1648817709811-89f2d7e29657?q=70&w=1200&auto=format&fit=crop', 1),
@@ -33,4 +17,6 @@ insert into public.categories (name, slug, image_url, sort_order) values
   ('Tyres', 'tyres', 'https://images.unsplash.com/photo-1634071257121-8cd59787ff1c?q=70&w=1200&auto=format&fit=crop', 8),
   ('Controls', 'controls', 'https://images.unsplash.com/photo-1752774941153-b96f2f7a8e80?q=70&w=1200&auto=format&fit=crop', 9),
   ('Accessories', 'accessories', 'https://images.unsplash.com/photo-1642663408192-817872d49a26?q=70&w=1200&auto=format&fit=crop', 10)
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  image_url = excluded.image_url,
+  sort_order = excluded.sort_order;
