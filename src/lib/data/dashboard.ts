@@ -276,6 +276,7 @@ const ESCROW_FROM_STATUS = (status: string): "held" | "released" | "refunded" =>
 
 export interface AdminListingView {
   id: string;
+  slug: string;
   title: string;
   brandName: string;
   sellerName: string;
@@ -290,14 +291,14 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
   if (!supabase) {
     const { allProducts } = await import("@/mocks");
     return allProducts.map((p) => ({
-      id: p.id, title: p.title, brandName: p.brandName, sellerName: p.seller.name,
+      id: p.id, slug: p.slug, title: p.title, brandName: p.brandName, sellerName: p.seller.name,
       condition: p.condition, priceCents: p.priceCents, status: "active",
     }));
   }
 
   const { data } = await supabase
     .from("products")
-    .select("id, title, brand_name, condition, price_cents, status, sellers(name)")
+    .select("id, slug, title, brand_name, condition, price_cents, status, sellers(name)")
     .order("created_at", { ascending: false });
   if (!data) return [];
 
@@ -305,7 +306,7 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
   return data.map((p: any) => {
     const sellerObj = Array.isArray(p.sellers) ? p.sellers[0] : p.sellers;
     return {
-      id: p.id, title: p.title, brandName: p.brand_name ?? "—",
+      id: p.id, slug: p.slug ?? "", title: p.title, brandName: p.brand_name ?? "—",
       sellerName: sellerObj?.name ?? "—", condition: p.condition,
       priceCents: p.price_cents, status: p.status,
     };

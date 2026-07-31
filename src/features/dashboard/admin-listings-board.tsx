@@ -55,18 +55,33 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
                   <td className="px-5 py-3 text-muted-foreground">{conditionLabel(p.condition as ProductCondition)}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{formatZAR(p.priceCents)}</td>
                   <td className="px-5 py-3"><StatusPill label={meta.label} tone={meta.tone} /></td>
-                  <td className="px-5 py-3 text-right">
-                    {p.status === "draft" ? (
-                      <span className="text-xs text-muted-foreground">Removed</span>
-                    ) : (
-                      <button
-                        onClick={() => remove(p.id)}
-                        disabled={removingId === p.id}
-                        className="rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
-                      >
-                        {removingId === p.id ? "Removing…" : "Remove"}
-                      </button>
-                    )}
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      {p.slug && (
+                        <a
+                          href={`/parts/${p.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                        >
+                          View live
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5" aria-hidden>
+                            <path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          </svg>
+                        </a>
+                      )}
+                      {p.status === "draft" ? (
+                        <span className="text-xs text-muted-foreground">Removed</span>
+                      ) : (
+                        <button
+                          onClick={() => remove(p.id)}
+                          disabled={removingId === p.id}
+                          className="rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                        >
+                          {removingId === p.id ? "Removing…" : "Remove"}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
