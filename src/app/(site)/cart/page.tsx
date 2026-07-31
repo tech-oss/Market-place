@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Minus, Plus, ShieldCheck, ShoppingCart, Trash2 } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PartVisual, productKind } from "@/components/shared/part-visual";
+import { ProductVisual, productKind } from "@/components/shared/part-visual";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatZAR } from "@/lib/format";
@@ -36,7 +36,7 @@ export default function CartPage() {
           {lines.map(({ product, qty }) => (
             <li key={product.id} className="flex gap-4 p-4">
               <Link href={`/parts/${product.slug}`}>
-                <PartVisual kind={productKind(product)} alt={product.title} className="size-24 rounded-xl" />
+                <ProductVisual image={product.images[0]} kind={productKind(product)} alt={product.title} className="size-24 rounded-xl" />
               </Link>
               <div className="flex flex-1 flex-col">
                 <div className="flex justify-between gap-4">

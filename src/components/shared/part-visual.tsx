@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { Product, ProductImage } from "@/types";
 
 /**
  * Premium SVG part illustrations used as listing imagery in the mock phase.
@@ -199,4 +199,29 @@ export function PartVisual({ kind, alt, className, dark = false }: PartVisualPro
       />
     </div>
   );
+}
+
+/**
+ * Renders the seller's uploaded photo when one exists, falling back to the
+ * illustration for listings without real images. Same className/aspect
+ * contract as PartVisual so it's a drop-in replacement everywhere.
+ */
+export function ProductVisual({
+  image,
+  kind,
+  alt,
+  className,
+  dark = false,
+}: {
+  image?: ProductImage;
+  kind: PartKind;
+  alt: string;
+  className?: string;
+  dark?: boolean;
+}) {
+  if (image?.url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={image.url} alt={alt} className={cn("object-cover", className)} />;
+  }
+  return <PartVisual kind={kind} alt={alt} className={className} dark={dark} />;
 }
