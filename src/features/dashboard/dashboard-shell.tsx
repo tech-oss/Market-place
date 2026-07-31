@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, Menu, X } from "lucide-react";
+import { ArrowLeft, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessagesNotifier } from "@/components/layout/messages-notifier";
+import { signOut } from "@/features/auth/actions";
 import { DASH_META } from "./nav";
 
 export function DashboardShell({
@@ -67,7 +68,7 @@ export function DashboardShell({
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="space-y-1 border-t border-white/10 p-3">
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
@@ -75,6 +76,15 @@ export function DashboardShell({
           <ArrowLeft className="size-4" />
           Back to store
         </Link>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <LogOut className="size-4" />
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   );
