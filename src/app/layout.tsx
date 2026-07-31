@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Geist_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { RouteLoader } from "@/components/shared/route-loader";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -57,6 +59,9 @@ export default function RootLayout({
       className={`${inter.variable} ${oswald.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <Suspense fallback={null}>
+          <RouteLoader />
+        </Suspense>
         <Providers>{children}</Providers>
       </body>
     </html>
