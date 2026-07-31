@@ -163,6 +163,9 @@ export interface SellerListing {
   shippingCents?: number;
   shippingLocalCents?: number;
   createdAt: string;
+  brandName?: string;
+  images?: { id: string; url: string; alt: string }[];
+  fitment?: { brand: string; model: string; yearFrom: number; yearTo: number };
 }
 
 export interface SellerOrder {

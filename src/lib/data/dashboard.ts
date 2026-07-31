@@ -94,19 +94,31 @@ export async function getSellerListings(): Promise<SellerListing[]> {
 
   const { data } = await supabase
     .from("products")
-    .select("id,title,slug,sku,category_slug,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at")
+    .select("id,title,slug,sku,category_slug,brand_name,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at,product_images(id,url,alt,position),fitments(brand,model,year_from,year_to)")
     .eq("seller_id", seller.id)
     .order("created_at", { ascending: false });
 
   if (!data) return [];
-  return data.map((p) => ({
-    id: p.id, title: p.title, slug: p.slug, sku: p.sku, categorySlug: p.category_slug,
-    priceCents: p.price_cents, stock: p.stock, status: p.status, views: p.views,
-    sold: p.sold, condition: p.condition,
-    shippingCents: p.shipping_cents ?? undefined,
-    shippingLocalCents: p.shipping_local_cents ?? undefined,
-    createdAt: p.created_at,
-  }));
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return data.map((p: any) => {
+    const fitment = Array.isArray(p.fitments) ? p.fitments[0] : p.fitments;
+    return {
+      id: p.id, title: p.title, slug: p.slug, sku: p.sku, categorySlug: p.category_slug,
+      priceCents: p.price_cents, stock: p.stock, status: p.status, views: p.views,
+      sold: p.sold, condition: p.condition,
+      shippingCents: p.shipping_cents ?? undefined,
+      shippingLocalCents: p.shipping_local_cents ?? undefined,
+      createdAt: p.created_at,
+      brandName: p.brand_name ?? undefined,
+      images: (p.product_images ?? [])
+        .sort((a: any, b: any) => a.position - b.position)
+        .map((i: any) => ({ id: i.id, url: i.url ?? "", alt: i.alt ?? p.title })),
+      fitment: fitment
+        ? { brand: fitment.brand, model: fitment.model, yearFrom: fitment.year_from, yearTo: fitment.year_to }
+        : undefined,
+    };
+  });
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 export async function getSellerOrders(): Promise<SellerOrder[]> {

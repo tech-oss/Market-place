@@ -133,33 +133,89 @@ export interface UpdateListingInput {
   sku?: string;
   shippingCents?: number;
   shippingLocalCents?: number;
+  /** Full replacement list — whatever's here becomes the listing's photos. */
+  imageUrls?: string[];
+  brand?: string;
+  model?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  /**
+   * Set when the seller couldn't find their bike in the catalog and is
+   * proposing a new make/model/year for this existing listing. Overrides
+   * brand/model/yearFrom/yearTo and pulls the listing back to pending-review
+   * until an admin approves the request (see approveYmmRequest / rejectYmmRequest).
+   */
+  newYmm?: {
+    makeName: string;
+    modelName: string;
+    yearFrom: number;
+    yearTo: number;
+  };
 }
 
-/** Seller: update an existing listing's details, price, stock and shipping. */
+/** Seller: update an existing listing's details, price, stock, shipping, photos and fitment. */
 export async function updateListing(input: UpdateListingInput): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONNECTED;
   const seller = await getCurrentSeller();
   if (!seller) return { ok: false, error: "No seller account found for this user." };
 
+  const patch: Record<string, unknown> = {
+    title: input.title,
+    category_slug: input.categorySlug,
+    condition: input.condition,
+    price_cents: input.priceCents,
+    stock: input.stock,
+    sku: input.sku ? sanitizeForCode128(input.sku) : input.sku,
+    shipping_cents: input.shippingCents ?? 0,
+    shipping_local_cents: input.shippingLocalCents ?? null,
+  };
+
+  if (input.newYmm) {
+    patch.brand_name = input.newYmm.makeName;
+    patch.status = "pending-review";
+  } else if (input.brand) {
+    patch.brand_name = input.brand;
+  }
+
   const { error } = await supabase
     .from("products")
-    .update({
-      title: input.title,
-      category_slug: input.categorySlug,
-      condition: input.condition,
-      price_cents: input.priceCents,
-      stock: input.stock,
-      sku: input.sku ? sanitizeForCode128(input.sku) : input.sku,
-      shipping_cents: input.shippingCents ?? 0,
-      shipping_local_cents: input.shippingLocalCents ?? null,
-    })
+    .update(patch)
     .eq("id", input.id)
     .eq("seller_id", seller.id);
-
   if (error) return { ok: false, error: error.message };
+
+  if (input.newYmm) {
+    await supabase.from("fitments").delete().eq("product_id", input.id);
+    await supabase.from("fitments").insert({
+      product_id: input.id, brand: input.newYmm.makeName, model: input.newYmm.modelName,
+      year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
+    });
+    await supabase.from("ymm_requests").insert({
+      seller_id: seller.id, product_id: input.id,
+      make_name: input.newYmm.makeName, model_name: input.newYmm.modelName,
+      year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
+    });
+  } else if (input.brand && input.model && input.yearFrom && input.yearTo) {
+    await supabase.from("fitments").delete().eq("product_id", input.id);
+    await supabase.from("fitments").insert({
+      product_id: input.id, brand: input.brand, model: input.model,
+      year_from: input.yearFrom, year_to: input.yearTo,
+    });
+  }
+
+  if (input.imageUrls) {
+    await supabase.from("product_images").delete().eq("product_id", input.id);
+    if (input.imageUrls.length) {
+      await supabase.from("product_images").insert(
+        input.imageUrls.map((url, i) => ({ product_id: input.id, url, alt: input.title, position: i })),
+      );
+    }
+  }
+
   revalidatePath("/seller/listings");
   revalidatePath("/parts");
+  if (input.newYmm) revalidatePath("/admin/ymm-requests");
   return { ok: true };
 }
 

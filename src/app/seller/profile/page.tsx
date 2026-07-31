@@ -85,7 +85,7 @@ export default async function SellerProfilePage({
                   <Clock className="size-5 text-amber-600" />
                   <div>
                     <p className="text-sm font-semibold text-amber-800">Pending Review</p>
-                    <p className="text-xs text-amber-700">Upload both documents to get verified</p>
+                    <p className="text-xs text-amber-700">Upload all documents to get verified</p>
                   </div>
                 </div>
               )}

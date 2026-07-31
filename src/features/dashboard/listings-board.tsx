@@ -125,6 +125,8 @@ export function ListingsBoard({
         <EditListingDialog
           listing={editing}
           categories={categories}
+          bikeMakes={bikeMakes}
+          bikeModels={bikeModels}
           onClose={() => setEditing(null)}
           onSave={async (input) => {
             setEditing(null);
@@ -150,6 +152,14 @@ export function ListingsBoard({
                       sku: input.sku || l.sku,
                       shippingCents: input.shippingCents,
                       shippingLocalCents: input.shippingLocalCents,
+                      status: input.newYmm ? "pending-review" : l.status,
+                      brandName: input.newYmm?.makeName ?? input.brand ?? l.brandName,
+                      images: input.imageUrls ? input.imageUrls.map((url, i) => ({ id: `${l.id}-${i}`, url, alt: input.title })) : l.images,
+                      fitment: input.newYmm
+                        ? { brand: input.newYmm.makeName, model: input.newYmm.modelName, yearFrom: input.newYmm.yearFrom, yearTo: input.newYmm.yearTo }
+                        : input.brand && input.model && input.yearFrom && input.yearTo
+                          ? { brand: input.brand, model: input.model, yearFrom: input.yearFrom, yearTo: input.yearTo }
+                          : l.fitment,
                     }
                   : l,
               ),
