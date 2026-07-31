@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Reveal } from "@/components/shared/reveal";
-import { PartVisual, categoryKind } from "@/components/shared/part-visual";
-import { categories } from "@/mocks";
+import { getCategories } from "@/lib/data/products";
 import { formatCount } from "@/lib/format";
 
 /** Section 03 — Shop by Category (dark image tiles). */
-export function CategoryGrid() {
+export async function CategoryGrid() {
+  const categories = await getCategories();
   return (
     <section className="py-10">
       <Container>
@@ -22,13 +22,13 @@ export function CategoryGrid() {
               <Link
                 key={cat.slug}
                 href={`/parts?category=${cat.slug}`}
-                className="group relative aspect-[4/5] overflow-hidden rounded-xl"
+                className="group relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-900"
               >
-                <PartVisual
-                  kind={categoryKind(cat.slug)}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={cat.imageUrl}
                   alt={cat.name}
-                  dark
-                  className="size-full transition-transform duration-500 group-hover:scale-105"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">

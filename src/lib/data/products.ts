@@ -158,6 +158,45 @@ export async function getBikeMakes(): Promise<BikeMake[]> {
   }));
 }
 
+export interface CatalogCategory {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  partCount: number;
+}
+
+/**
+ * Part categories from the `categories` table, each annotated with the live
+ * count of active listings in it. Falls back to the static mock list (zero
+ * counts, no banner image) when unconfigured.
+ */
+export async function getCategories(): Promise<CatalogCategory[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    const { categories } = await import("@/mocks");
+    return categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug, imageUrl: "", partCount: 0 }));
+  }
+
+  const [{ data: cats }, { data: products }] = await Promise.all([
+    supabase.from("categories").select("id,name,slug,image_url").order("sort_order"),
+    supabase.from("products").select("category_slug").eq("status", "active"),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const p of products ?? []) {
+    counts.set(p.category_slug, (counts.get(p.category_slug) ?? 0) + 1);
+  }
+
+  return (cats ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    imageUrl: c.image_url,
+    partCount: counts.get(c.slug) ?? 0,
+  }));
+}
+
 export interface PublicSeller {
   id: string;
   name: string;

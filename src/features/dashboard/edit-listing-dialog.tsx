@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { categories, conditionOptions } from "@/mocks";
+import { conditionOptions } from "@/mocks";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
 import type { UpdateListingInput } from "@/features/dashboard/actions";
+import type { CatalogCategory } from "@/lib/data/products";
 
 const field = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30";
 const labelCls = "mb-1 block text-xs font-semibold text-foreground";
@@ -14,10 +15,12 @@ export function EditListingDialog({
   listing,
   onClose,
   onSave,
+  categories,
 }: {
   listing: SellerListing;
   onClose: () => void;
   onSave: (input: UpdateListingInput) => void | Promise<void>;
+  categories: CatalogCategory[];
 }) {
   const [title, setTitle] = useState(listing.title);
   const [categorySlug, setCategorySlug] = useState(listing.categorySlug);
@@ -71,7 +74,7 @@ export function EditListingDialog({
           </div>
           <div>
             <label className={labelCls}>Category</label>
-            <select value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} className={field}>
+            <select required value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} className={field}>
               {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>

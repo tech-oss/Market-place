@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
-import { PartVisual, categoryKind } from "@/components/shared/part-visual";
 import { Reveal } from "@/components/shared/reveal";
-import { categories } from "@/mocks";
+import { getCategories } from "@/lib/data/products";
 import { formatCount } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -12,7 +11,8 @@ export const metadata: Metadata = {
   description: "Shop motorcycle parts by category — brakes, engine, exhaust, suspension and more.",
 };
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await getCategories();
   return (
     <>
       <PageHeader
@@ -26,13 +26,13 @@ export default function CategoriesPage() {
             <Reveal key={cat.slug} delay={Math.min(i, 8) * 0.04}>
               <Link
                 href={`/parts?category=${cat.slug}`}
-                className="group relative block aspect-[4/3] overflow-hidden rounded-xl"
+                className="group relative block aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900"
               >
-                <PartVisual
-                  kind={categoryKind(cat.slug)}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={cat.imageUrl}
                   alt={cat.name}
-                  dark
-                  className="size-full transition-transform duration-500 group-hover:scale-105"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">

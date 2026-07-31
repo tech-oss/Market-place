@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, Loader2, QrCode, X } from "lucide-react";
-import { categories, conditionOptions } from "@/mocks";
+import { conditionOptions } from "@/mocks";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
-import type { BikeMake } from "@/lib/data/products";
+import type { BikeMake, CatalogCategory } from "@/lib/data/products";
 
 export interface ListingInput {
   title: string;
@@ -33,13 +33,15 @@ export function NewListingDialog({
   onClose,
   onCreate,
   bikeMakes,
+  categories,
 }: {
   onClose: () => void;
   onCreate: (listing: SellerListing, input: ListingInput) => void;
   bikeMakes: BikeMake[];
+  categories: CatalogCategory[];
 }) {
   const [title, setTitle] = useState("");
-  const [categorySlug, setCategorySlug] = useState(categories[0].slug);
+  const [categorySlug, setCategorySlug] = useState(categories[0]?.slug ?? "");
   const [condition, setCondition] = useState<ProductCondition>("used");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("1");
@@ -173,7 +175,7 @@ export function NewListingDialog({
           </div>
           <div>
             <label className={labelCls}>Category</label>
-            <select value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} className={field}>
+            <select required value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} className={field}>
               {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
