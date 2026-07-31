@@ -314,6 +314,70 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
+export interface YmmRequestView {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  productId: string;
+  productTitle: string;
+  makeName: string;
+  modelName: string;
+  yearFrom: number;
+  yearTo: number;
+  createdAt: string;
+}
+
+/** Admin: pending seller requests to add a new make/model/year to the catalog. */
+export async function getYmmRequests(): Promise<YmmRequestView[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("ymm_requests")
+    .select("id, seller_id, product_id, make_name, model_name, year_from, year_to, created_at, sellers(name), products(title)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (!data) return [];
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return data.map((r: any) => {
+    const seller = Array.isArray(r.sellers) ? r.sellers[0] : r.sellers;
+    const product = Array.isArray(r.products) ? r.products[0] : r.products;
+    return {
+      id: r.id, sellerId: r.seller_id, sellerName: seller?.name ?? "—",
+      productId: r.product_id, productTitle: product?.title ?? "—",
+      makeName: r.make_name, modelName: r.model_name,
+      yearFrom: r.year_from, yearTo: r.year_to, createdAt: r.created_at,
+    };
+  });
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+/** Admin: the most recent YMM request tied to a specific listing, if any. */
+export async function getYmmRequestForProduct(productId: string): Promise<{
+  status: "pending" | "approved" | "rejected";
+  makeName: string;
+  modelName: string;
+  yearFrom: number;
+  yearTo: number;
+  adminNote: string | null;
+} | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("ymm_requests")
+    .select("status, make_name, model_name, year_from, year_to, admin_note")
+    .eq("product_id", productId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    status: data.status, makeName: data.make_name, modelName: data.model_name,
+    yearFrom: data.year_from, yearTo: data.year_to, adminNote: data.admin_note,
+  };
+}
+
 export interface AdminUserView {
   id: string;
   name: string;

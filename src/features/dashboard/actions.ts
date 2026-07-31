@@ -30,6 +30,18 @@ export interface CreateListingInput {
   shippingCents?: number;
   shippingLocalCents?: number;
   imageUrls?: string[];
+  /**
+   * Set when the seller couldn't find their bike in the catalog and is
+   * proposing a new make/model/year. Overrides brand/model/yearFrom/yearTo.
+   * The listing is held in "pending-review" until an admin approves the
+   * request (see approveYmmRequest / rejectYmmRequest).
+   */
+  newYmm?: {
+    makeName: string;
+    modelName: string;
+    yearFrom: number;
+    yearTo: number;
+  };
 }
 
 /**
@@ -43,7 +55,14 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
   const seller = await getCurrentSeller();
   if (!seller) return { ok: false, error: "No seller account found for this user." };
 
-  const status = seller.status === "active" ? "active" : "awaiting-verification";
+  // A pending YMM request holds the whole listing back regardless of the
+  // seller's own verification status — it isn't live until an admin approves
+  // both the seller's fitness to sell AND the new make/model/year proposal.
+  const status = input.newYmm
+    ? "pending-review"
+    : seller.status === "active" ? "active" : "awaiting-verification";
+
+  const brandName = input.newYmm?.makeName || input.brand || "—";
 
   const slug =
     input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") +
@@ -62,7 +81,7 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
       price_cents: input.priceCents,
       condition: input.condition,
       category_slug: input.categorySlug,
-      brand_name: input.brand || "—",
+      brand_name: brandName,
       oem_numbers: input.oem ? [input.oem] : [],
       inventory_bin: input.bin || null,
       stock: input.stock,
@@ -75,7 +94,17 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
 
   if (error) return { ok: false, error: error.message };
 
-  if (input.brand && input.model && input.yearFrom && input.yearTo) {
+  if (input.newYmm) {
+    await supabase.from("fitments").insert({
+      product_id: product.id, brand: input.newYmm.makeName, model: input.newYmm.modelName,
+      year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
+    });
+    await supabase.from("ymm_requests").insert({
+      seller_id: seller.id, product_id: product.id,
+      make_name: input.newYmm.makeName, model_name: input.newYmm.modelName,
+      year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
+    });
+  } else if (input.brand && input.model && input.yearFrom && input.yearTo) {
     await supabase.from("fitments").insert({
       product_id: product.id, brand: input.brand, model: input.model,
       year_from: input.yearFrom, year_to: input.yearTo,
@@ -90,6 +119,7 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
 
   revalidatePath("/seller/listings");
   revalidatePath("/parts");
+  if (input.newYmm) revalidatePath("/admin/ymm-requests");
   return { ok: true };
 }
 
@@ -378,5 +408,180 @@ export async function settleOrder(
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/orders");
   revalidatePath("/seller/wallet");
+  return { ok: true };
+}
+
+/* ---------------------------------------------------------------------------
+ * Bike catalog (Make / Model) — admin CRUD
+ * ------------------------------------------------------------------------- */
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+/** Admin: add a new bike make to the catalog. */
+export async function createBikeMake(name: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { data: existing } = await supabase.from("bike_makes").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+  const logo = name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "MP";
+  const { error } = await supabase.from("bike_makes").insert({
+    name: name.trim(), slug: slugify(name), logo, sort_order: (existing?.[0]?.sort_order ?? 0) + 1,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/brands");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+/** Admin: rename a bike make (slug/logo stay fixed once created). */
+export async function updateBikeMake(id: string, name: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("bike_makes").update({ name: name.trim() }).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/brands");
+  return { ok: true };
+}
+
+/** Admin: remove a bike make. Its models cascade-delete with it. */
+export async function deleteBikeMake(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("bike_makes").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/brands");
+  return { ok: true };
+}
+
+export interface BikeModelInput {
+  makeId: string;
+  name: string;
+  yearFrom: number;
+  yearTo: number;
+}
+
+/** Admin: add a new model (with its year range) under a make. */
+export async function createBikeModel(input: BikeModelInput): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("bike_models").insert({
+    make_id: input.makeId, name: input.name.trim(), year_from: input.yearFrom, year_to: input.yearTo,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/seller/listings");
+  return { ok: true };
+}
+
+/** Admin: edit a model's name, year range or active/inactive status. */
+export async function updateBikeModel(
+  id: string,
+  input: Partial<BikeModelInput> & { status?: "active" | "inactive" },
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name.trim();
+  if (input.yearFrom !== undefined) patch.year_from = input.yearFrom;
+  if (input.yearTo !== undefined) patch.year_to = input.yearTo;
+  if (input.status !== undefined) patch.status = input.status;
+  const { error } = await supabase.from("bike_models").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/seller/listings");
+  return { ok: true };
+}
+
+/** Admin: remove a model from the catalog. */
+export async function deleteBikeModel(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase.from("bike_models").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/catalog");
+  revalidatePath("/seller/listings");
+  return { ok: true };
+}
+
+/* ---------------------------------------------------------------------------
+ * YMM (Year/Make/Model) requests — seller-proposed catalog additions
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Admin: approve a seller's proposed make/model/year. Reuses an existing
+ * make/model when the name already exists (case-insensitive) instead of
+ * creating a duplicate, then publishes the listing that was waiting on it.
+ */
+export async function approveYmmRequest(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: req } = await supabase.from("ymm_requests").select("*").eq("id", id).maybeSingle();
+  if (!req) return { ok: false, error: "Request not found." };
+
+  let { data: make } = await supabase
+    .from("bike_makes").select("id").ilike("name", req.make_name).maybeSingle();
+  if (!make) {
+    const { data: existing } = await supabase.from("bike_makes").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+    const logo = req.make_name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "MP";
+    const { data: created, error: makeErr } = await supabase
+      .from("bike_makes")
+      .insert({ name: req.make_name, slug: slugify(req.make_name), logo, sort_order: (existing?.[0]?.sort_order ?? 0) + 1 })
+      .select("id").single();
+    if (makeErr) return { ok: false, error: makeErr.message };
+    make = created;
+  }
+
+  const { data: model } = await supabase
+    .from("bike_models").select("id")
+    .eq("make_id", make.id).ilike("name", req.model_name)
+    .eq("year_from", req.year_from).eq("year_to", req.year_to).maybeSingle();
+  if (!model) {
+    const { error: modelErr } = await supabase.from("bike_models").insert({
+      make_id: make.id, name: req.model_name, year_from: req.year_from, year_to: req.year_to,
+    });
+    if (modelErr) return { ok: false, error: modelErr.message };
+  }
+
+  const { error: reqErr } = await supabase
+    .from("ymm_requests").update({ status: "approved", decided_at: new Date().toISOString() }).eq("id", id);
+  if (reqErr) return { ok: false, error: reqErr.message };
+
+  const { data: seller } = await supabase.from("sellers").select("status").eq("id", req.seller_id).maybeSingle();
+  const productStatus = seller?.status === "active" ? "active" : "awaiting-verification";
+  await supabase.from("products").update({ status: productStatus }).eq("id", req.product_id).eq("status", "pending-review");
+
+  revalidatePath("/admin/ymm-requests");
+  revalidatePath("/admin/catalog");
+  revalidatePath("/admin/listings");
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
+  revalidatePath("/brands");
+  return { ok: true };
+}
+
+/** Admin: reject a seller's proposed make/model/year. The listing is pulled back to draft. */
+export async function rejectYmmRequest(id: string, note?: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: req } = await supabase.from("ymm_requests").select("product_id").eq("id", id).maybeSingle();
+  if (!req) return { ok: false, error: "Request not found." };
+
+  const { error } = await supabase
+    .from("ymm_requests")
+    .update({ status: "rejected", admin_note: note || null, decided_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  await supabase.from("products").update({ status: "draft" }).eq("id", req.product_id).eq("status", "pending-review");
+
+  revalidatePath("/admin/ymm-requests");
+  revalidatePath("/admin/listings");
+  revalidatePath("/seller/listings");
   return { ok: true };
 }

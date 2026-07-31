@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ImageOff, MapPin, Star } from "lucide-react";
+import { ArrowLeft, ImageOff, MapPin, ShieldQuestion, Star } from "lucide-react";
 import { PageHeading, SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { LISTING_STATUS_META } from "@/features/dashboard/status";
 import { getProductById } from "@/lib/data/products";
+import { getYmmRequestForProduct } from "@/lib/data/dashboard";
 import { formatZAR, conditionLabel } from "@/lib/format";
 import type { ListingStatus, ProductCondition } from "@/types";
 
@@ -13,7 +14,10 @@ export default async function AdminListingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await getProductById(id);
+  const [product, ymmRequest] = await Promise.all([
+    getProductById(id),
+    getYmmRequestForProduct(id),
+  ]);
   if (!product) notFound();
 
   const status = (product.status ?? "active") as ListingStatus;
@@ -60,6 +64,32 @@ export default async function AdminListingDetailPage({
       <div className="mb-6 flex items-center gap-2">
         <StatusPill label={meta.label} tone={meta.tone} />
       </div>
+
+      {ymmRequest && ymmRequest.status === "pending" && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <ShieldQuestion className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <p className="font-medium">
+              New make/model/year requested: {ymmRequest.makeName} {ymmRequest.modelName} ({ymmRequest.yearFrom}–{ymmRequest.yearTo})
+            </p>
+            <p className="mt-0.5">
+              This listing stays hidden until it's reviewed in{" "}
+              <Link href="/admin/ymm-requests" className="font-semibold underline">YMM Requests</Link>.
+            </p>
+          </div>
+        </div>
+      )}
+      {ymmRequest && ymmRequest.status === "rejected" && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <ShieldQuestion className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <p className="font-medium">
+              Make/model/year request rejected: {ymmRequest.makeName} {ymmRequest.modelName} ({ymmRequest.yearFrom}–{ymmRequest.yearTo})
+            </p>
+            {ymmRequest.adminNote && <p className="mt-0.5">Note: {ymmRequest.adminNote}</p>}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">

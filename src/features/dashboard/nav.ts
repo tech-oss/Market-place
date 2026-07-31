@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BadgeCheck,
+  Bike,
+  ClipboardCheck,
   LayoutDashboard,
   MessageSquare,
   Package,
@@ -34,6 +36,8 @@ export const ADMIN_NAV: DashNavItem[] = [
   { label: "Orders & Escrow", href: "/admin/orders", icon: Receipt },
   { label: "Conversations", href: "/admin/messages", icon: MessageSquare },
   { label: "Listings", href: "/admin/listings", icon: Tag },
+  { label: "Bike Catalog", href: "/admin/catalog", icon: Bike },
+  { label: "YMM Requests", href: "/admin/ymm-requests", icon: ClipboardCheck },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Commission", href: "/admin/settings", icon: Percent },
 ];

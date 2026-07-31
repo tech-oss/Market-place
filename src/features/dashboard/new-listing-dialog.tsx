@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, QrCode, X } from "lucide-react";
 import { conditionOptions } from "@/mocks";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeForCode128 } from "@/lib/barcode";
 import type { ProductCondition, SellerListing } from "@/types";
-import type { BikeMake, CatalogCategory } from "@/lib/data/products";
+import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
 
 export interface ListingInput {
   title: string;
@@ -24,6 +24,7 @@ export interface ListingInput {
   shippingCents?: number;
   shippingLocalCents?: number;
   imageUrls?: string[];
+  newYmm?: { makeName: string; modelName: string; yearFrom: number; yearTo: number };
 }
 
 const field = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30";
@@ -33,11 +34,13 @@ export function NewListingDialog({
   onClose,
   onCreate,
   bikeMakes,
+  bikeModels,
   categories,
 }: {
   onClose: () => void;
   onCreate: (listing: SellerListing, input: ListingInput) => void;
   bikeMakes: BikeMake[];
+  bikeModels: BikeModel[];
   categories: CatalogCategory[];
 }) {
   const [title, setTitle] = useState("");
@@ -48,11 +51,26 @@ export function NewListingDialog({
   const [sku, setSku] = useState("");
   const [oem, setOem] = useState("");
   const [bin, setBin] = useState("");
-  const [brand, setBrand] = useState(bikeMakes[0]?.name ?? "");
-  const [model, setModel] = useState("");
-  const [years, setYears] = useState("");
   const [shipNational, setShipNational] = useState("");
   const [shipLocal, setShipLocal] = useState("");
+
+  // Compatibility: pick an existing catalog make/model, or request a new one.
+  const [fitmentMode, setFitmentMode] = useState<"catalog" | "request">("catalog");
+  const [makeId, setMakeId] = useState(bikeMakes[0]?.id ?? "");
+  const modelsForMake = useMemo(() => bikeModels.filter((m) => m.makeId === makeId), [bikeModels, makeId]);
+  const [modelId, setModelId] = useState(modelsForMake[0]?.id ?? "");
+  const selectedModel = modelsForMake.find((m) => m.id === modelId);
+
+  const [reqMake, setReqMake] = useState("");
+  const [reqModel, setReqModel] = useState("");
+  const [reqYearFrom, setReqYearFrom] = useState("");
+  const [reqYearTo, setReqYearTo] = useState("");
+
+  const changeMake = (id: string) => {
+    setMakeId(id);
+    const first = bikeModels.find((m) => m.makeId === id);
+    setModelId(first?.id ?? "");
+  };
 
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -87,8 +105,13 @@ export function NewListingDialog({
     e.preventDefault();
     const seq = String(Math.floor(1000 + Math.random() * 9000));
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const [yf, yt] = years.split(/[–-]/).map((y) => parseInt(y.trim(), 10));
     const finalSku = sku.trim() || `MP-${categorySlug.slice(0, 3).toUpperCase()}-${seq}`;
+
+    const isRequest = fitmentMode === "request";
+    const reqYf = parseInt(reqYearFrom, 10);
+    const reqYt = parseInt(reqYearTo, 10);
+    const selectedMake = bikeMakes.find((m) => m.id === makeId);
+
     const input: ListingInput = {
       title: title.trim() || "Untitled part",
       categorySlug, condition,
@@ -97,13 +120,16 @@ export function NewListingDialog({
       sku: finalSku,
       oem: oem || undefined,
       bin: bin || undefined,
-      brand: brand || undefined,
-      model: model || undefined,
-      yearFrom: Number.isFinite(yf) ? yf : undefined,
-      yearTo: Number.isFinite(yt) ? yt : undefined,
+      brand: isRequest ? undefined : selectedMake?.name,
+      model: isRequest ? undefined : selectedModel?.name,
+      yearFrom: isRequest ? undefined : selectedModel?.yearFrom,
+      yearTo: isRequest ? undefined : selectedModel?.yearTo,
       shippingCents: shipNational ? Math.round(Number(shipNational) * 100) : 0,
       shippingLocalCents: shipLocal ? Math.round(Number(shipLocal) * 100) : undefined,
       imageUrls: images,
+      newYmm: isRequest && reqMake.trim() && reqModel.trim() && Number.isFinite(reqYf) && Number.isFinite(reqYt)
+        ? { makeName: reqMake.trim(), modelName: reqModel.trim(), yearFrom: reqYf, yearTo: reqYt }
+        : undefined,
     };
     const listing: SellerListing = {
       id: `l-${Date.now()}`,
@@ -113,7 +139,7 @@ export function NewListingDialog({
       categorySlug,
       priceCents: input.priceCents,
       stock: input.stock,
-      status: "awaiting-verification",
+      status: input.newYmm ? "pending-review" : "awaiting-verification",
       views: 0, sold: 0, condition,
       shippingCents: input.shippingCents,
       shippingLocalCents: input.shippingLocalCents,
@@ -237,14 +263,51 @@ export function NewListingDialog({
           </div>
 
           <div className="sm:col-span-2">
-            <label className={labelCls}>Compatibility (make / model / years)</label>
-            <div className="grid grid-cols-3 gap-3">
-              <select value={brand} onChange={(e) => setBrand(e.target.value)} className={field}>
-                {bikeMakes.map((m) => <option key={m.slug} value={m.name}>{m.name}</option>)}
-              </select>
-              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="S1000RR" className={field} />
-              <input value={years} onChange={(e) => setYears(e.target.value)} placeholder="2019–2023" className={field} />
+            <div className="mb-1 flex items-center justify-between">
+              <label className={labelCls}>Compatibility (make / model / years)</label>
+              <button
+                type="button"
+                onClick={() => setFitmentMode(fitmentMode === "catalog" ? "request" : "catalog")}
+                className="text-xs font-medium text-brand hover:underline"
+              >
+                {fitmentMode === "catalog" ? "Can't find your bike? Request it" : "Use existing catalog instead"}
+              </button>
             </div>
+
+            {fitmentMode === "catalog" ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={makeId} onChange={(e) => changeMake(e.target.value)} className={field}>
+                    {bikeMakes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                  <select value={modelId} onChange={(e) => setModelId(e.target.value)} disabled={modelsForMake.length === 0} className={field}>
+                    {modelsForMake.length === 0 && <option value="">No models yet for this make</option>}
+                    {modelsForMake.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.yearFrom}–{m.yearTo})</option>
+                    ))}
+                  </select>
+                </div>
+                {modelsForMake.length === 0 && (
+                  <p className="mt-1.5 text-[11px] text-amber-700">
+                    No models are set up for this make yet — use “Request it” above to propose one.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={reqMake} onChange={(e) => setReqMake(e.target.value)} placeholder="Make, e.g. Indian" className={field} />
+                  <input value={reqModel} onChange={(e) => setReqModel(e.target.value)} placeholder="Model, e.g. FTR 1200" className={field} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <input type="number" value={reqYearFrom} onChange={(e) => setReqYearFrom(e.target.value)} placeholder="Year from" className={field} />
+                  <input type="number" value={reqYearTo} onChange={(e) => setReqYearTo(e.target.value)} placeholder="Year to" className={field} />
+                </div>
+                <p className="mt-1.5 text-[11px] text-amber-700">
+                  This listing will be held for admin review until the new make/model/year is approved.
+                </p>
+              </>
+            )}
           </div>
         </div>
 

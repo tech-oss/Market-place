@@ -11,17 +11,19 @@ import { NewListingDialog } from "@/features/dashboard/new-listing-dialog";
 import { EditListingDialog } from "@/features/dashboard/edit-listing-dialog";
 import { createListing, updateListing } from "@/features/dashboard/actions";
 import type { SellerListing } from "@/types";
-import type { BikeMake, CatalogCategory } from "@/lib/data/products";
+import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
 
 export function ListingsBoard({
   initial,
   live,
   bikeMakes,
+  bikeModels,
   categories,
 }: {
   initial: SellerListing[];
   live: boolean;
   bikeMakes: BikeMake[];
+  bikeModels: BikeModel[];
   categories: CatalogCategory[];
 }) {
   const router = useRouter();
@@ -158,6 +160,7 @@ export function ListingsBoard({
       {adding && (
         <NewListingDialog
           bikeMakes={bikeMakes}
+          bikeModels={bikeModels}
           categories={categories}
           onClose={() => setAdding(false)}
           onCreate={async (listing, input) => {

@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   motion,
   useReducedMotion,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { brands } from "@/mocks";
+import type { FitmentFacet } from "@/lib/data/products";
 
 interface PlatformStat {
   label: string;
@@ -35,58 +36,94 @@ const TRUST = [
   { icon: RotateCcw, title: "Easy Returns", body: "Hassle-free returns if it's not right" },
 ];
 
-const MODELS = ["S1000RR", "R1", "CBR 1000RR", "Duke 390", "Panigale V4"];
-const YEARS = Array.from({ length: 12 }, (_, i) => `${2024 - i}`);
 const PART_TYPES = ["All Parts", "Brakes", "Engine", "Exhaust", "Suspension", "Bodywork"];
 
 const SEARCH_BTN =
   "inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-ink px-8 text-sm font-semibold text-ink-foreground transition-transform hover:bg-neutral-800 active:translate-y-px";
 
-function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
-  if (partNumber) {
-    return (
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Input
-          placeholder="Enter OEM / part number…"
-          className="h-12 flex-1 bg-muted"
-          aria-label="Part number"
-        />
-        <button type="button" className={SEARCH_BTN}>
-          <Search className="size-4" /> Search
-        </button>
-      </div>
-    );
-  }
+function PartNumberSearch() {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const search = () => router.push(value.trim() ? `/parts?q=${encodeURIComponent(value.trim())}` : "/parts");
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && search()}
+        placeholder="Enter OEM / part number…"
+        className="h-12 flex-1 bg-muted"
+        aria-label="Part number"
+      />
+      <button type="button" onClick={search} className={SEARCH_BTN}>
+        <Search className="size-4" /> Search
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Make/Model/Year reflect *actual live inventory* — sourced from the
+ * fitments of active listings, not a static list. A make with no stock
+ * simply won't appear, and Model/Year cascade from whatever's really there.
+ */
+function FitmentSelects({ facets }: { facets: FitmentFacet[] }) {
+  const router = useRouter();
+  const [make, setMake] = useState<string>();
+  const [model, setModel] = useState<string>();
+  const [year, setYear] = useState<string>();
+  const [partType, setPartType] = useState("All Parts");
+
+  const makes = useMemo(
+    () => Array.from(new Set(facets.map((f) => f.brand))).sort(),
+    [facets],
+  );
+  const models = useMemo(
+    () => Array.from(new Set(facets.filter((f) => !make || f.brand === make).map((f) => f.model))).sort(),
+    [facets, make],
+  );
+  const years = useMemo(() => {
+    const set = new Set<number>();
+    for (const f of facets) {
+      if (make && f.brand !== make) continue;
+      if (model && f.model !== model) continue;
+      for (let y = f.yearFrom; y <= f.yearTo; y++) set.add(y);
+    }
+    return Array.from(set).sort((a, b) => b - a);
+  }, [facets, make, model]);
+
+  const search = () => {
+    const tokens = [make, model, year, partType !== "All Parts" ? partType : undefined].filter(Boolean);
+    router.push(tokens.length ? `/parts?q=${encodeURIComponent(tokens.join(" "))}` : "/parts");
+  };
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-      <Select>
+      <Select value={make} onValueChange={(v) => { setMake(v ?? undefined); setModel(undefined); setYear(undefined); }}>
         <SelectTrigger className="!h-12 bg-muted" aria-label="Make">
-          <SelectValue placeholder="Make" />
+          <SelectValue placeholder={makes.length ? "Make" : "No stock yet"} />
         </SelectTrigger>
         <SelectContent>
-          {brands.map((b) => (
-            <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>
-          ))}
+          {makes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
         </SelectContent>
       </Select>
-      <Select>
+      <Select value={model} onValueChange={(v) => { setModel(v ?? undefined); setYear(undefined); }} disabled={models.length === 0}>
         <SelectTrigger className="!h-12 bg-muted" aria-label="Model">
-          <SelectValue placeholder="Model" />
+          <SelectValue placeholder={models.length ? "Model" : "—"} />
         </SelectTrigger>
         <SelectContent>
-          {MODELS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+          {models.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
         </SelectContent>
       </Select>
-      <Select>
+      <Select value={year} onValueChange={(v) => setYear(v ?? undefined)} disabled={years.length === 0}>
         <SelectTrigger className="!h-12 bg-muted" aria-label="Year">
-          <SelectValue placeholder="Year" />
+          <SelectValue placeholder={years.length ? "Year" : "—"} />
         </SelectTrigger>
         <SelectContent>
-          {YEARS.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+          {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
         </SelectContent>
       </Select>
-      <Select defaultValue="All Parts">
+      <Select value={partType} onValueChange={(v) => setPartType(v ?? "All Parts")}>
         <SelectTrigger className="!h-12 bg-muted" aria-label="Part type">
           <SelectValue placeholder="Part Type" />
         </SelectTrigger>
@@ -94,14 +131,14 @@ function FitmentSelects({ partNumber = false }: { partNumber?: boolean }) {
           {PART_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
         </SelectContent>
       </Select>
-      <button type="button" className={`${SEARCH_BTN} col-span-2 lg:col-span-1`}>
+      <button type="button" onClick={search} className={`${SEARCH_BTN} col-span-2 lg:col-span-1`}>
         <Search className="size-4" /> Search
       </button>
     </div>
   );
 }
 
-export function Hero({ stats }: { stats: PlatformStat[] }) {
+export function Hero({ stats, facets }: { stats: PlatformStat[]; facets: FitmentFacet[] }) {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -184,10 +221,10 @@ export function Hero({ stats }: { stats: PlatformStat[] }) {
               <TabsTrigger value="part" className="uppercase tracking-wide">By Part Number</TabsTrigger>
             </TabsList>
             <TabsContent value="motorcycle">
-              <FitmentSelects />
+              <FitmentSelects facets={facets} />
             </TabsContent>
             <TabsContent value="part">
-              <FitmentSelects partNumber />
+              <PartNumberSearch />
             </TabsContent>
           </Tabs>
 

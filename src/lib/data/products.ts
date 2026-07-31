@@ -207,6 +207,81 @@ export async function getCategories(): Promise<CatalogCategory[]> {
   }));
 }
 
+export interface BikeModel {
+  id: string;
+  makeId: string;
+  makeName: string;
+  name: string;
+  yearFrom: number;
+  yearTo: number;
+  status: "active" | "inactive";
+}
+
+/**
+ * The admin-managed model catalog (`bike_models`), joined with its make name.
+ * Used for the seller listing form's Make -> Model cascade and the admin
+ * Bike Catalog management page. By default only active models are returned
+ * (what a seller should be able to pick); pass includeInactive for admin use.
+ */
+export async function getBikeModelsCatalog({ includeInactive = false } = {}): Promise<BikeModel[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  let query = supabase
+    .from("bike_models")
+    .select("id, make_id, name, year_from, year_to, status, bike_makes(name)")
+    .order("name");
+  if (!includeInactive) query = query.eq("status", "active");
+
+  const { data } = await query;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return (data ?? []).map((m: any) => {
+    const make = Array.isArray(m.bike_makes) ? m.bike_makes[0] : m.bike_makes;
+    return {
+      id: m.id,
+      makeId: m.make_id,
+      makeName: make?.name ?? "—",
+      name: m.name,
+      yearFrom: m.year_from,
+      yearTo: m.year_to,
+      status: m.status,
+    };
+  });
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+export interface FitmentFacet {
+  brand: string;
+  model: string;
+  yearFrom: number;
+  yearTo: number;
+}
+
+/**
+ * Distinct make/model/year fitments actually attached to *active* listings —
+ * the source of truth for "what can a buyer search for right now". Unlike
+ * the catalog (which an admin curates ahead of stock existing), this only
+ * ever reflects real inventory: a make/model with no active listing simply
+ * won't appear.
+ */
+export async function getFitmentFacets(): Promise<FitmentFacet[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return mockAll.flatMap((p) =>
+      p.fitment.map((f) => ({ brand: f.brand, model: f.model, yearFrom: f.yearFrom, yearTo: f.yearTo })),
+    );
+  }
+
+  const { data } = await supabase
+    .from("fitments")
+    .select("brand, model, year_from, year_to, products!inner(status)")
+    .eq("products.status", "active");
+
+  return (data ?? []).map((f) => ({
+    brand: f.brand, model: f.model, yearFrom: f.year_from, yearTo: f.year_to,
+  }));
+}
+
 export interface PublicSeller {
   id: string;
   name: string;
