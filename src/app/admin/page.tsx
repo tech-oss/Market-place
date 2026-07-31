@@ -2,7 +2,9 @@ import Link from "next/link";
 import { AlertTriangle, Banknote, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
+import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { getActiveSellerCount, getAdminOrders, getCommissionPct, getSellerApplications } from "@/lib/data/dashboard";
+import type { OrderStatus } from "@/types";
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -101,18 +103,23 @@ export default async function AdminOverview() {
                   <th className="px-5 py-3 font-medium">Order</th>
                   <th className="px-5 py-3 font-medium">Seller</th>
                   <th className="px-5 py-3 font-medium">Total</th>
-                  <th className="px-5 py-3 font-medium">Buyer Protection</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {adminOrders.slice(0, 5).map((o) => (
-                  <tr key={o.reference}>
-                    <td className="px-5 py-3 font-medium text-foreground">{o.reference}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{o.seller}</td>
-                    <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
-                    <td className="px-5 py-3"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
-                  </tr>
-                ))}
+                {adminOrders.slice(0, 5).map((o) => {
+                  const meta = ORDER_STATUS_META[o.status as OrderStatus];
+                  return (
+                    <tr key={o.reference}>
+                      <td className="px-5 py-3 font-medium text-foreground">{o.reference}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{o.seller}</td>
+                      <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
+                      <td className="px-5 py-3">
+                        {meta ? <StatusPill label={meta.label} tone={meta.tone} /> : <StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} />}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

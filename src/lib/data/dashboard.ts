@@ -237,6 +237,72 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
+export interface BuyerOrderDetail {
+  id: string;
+  reference: string;
+  status: OrderStatus;
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  placedAt: string;
+  courier?: string;
+  tracking?: string;
+  shippingService?: string;
+  shippingNote?: string;
+  shippingAddress: {
+    name: string | null;
+    phone: string | null;
+    address: string | null;
+    city: string | null;
+    postalCode: string | null;
+  };
+  items: { title: string; productSlug: string | null; sellerName: string | null; qty: number; priceCents: number }[];
+}
+
+/** A single order belonging to the signed-in buyer, for the order detail page. Null if it isn't theirs. */
+export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("orders")
+    .select(
+      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
+    )
+    .eq("id", id)
+    .eq("buyer_id", user.id)
+    .maybeSingle();
+  if (!data) return null;
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const d = data as any;
+  return {
+    id: d.id,
+    reference: d.reference,
+    status: d.status,
+    subtotalCents: d.subtotal_cents,
+    shippingCents: d.shipping_cents,
+    totalCents: d.total_cents,
+    placedAt: d.placed_at,
+    courier: d.courier ?? undefined,
+    tracking: d.tracking ?? undefined,
+    shippingService: d.shipping_service ?? undefined,
+    shippingNote: d.shipping_note ?? undefined,
+    shippingAddress: {
+      name: d.shipping_name, phone: d.shipping_phone, address: d.shipping_address,
+      city: d.shipping_city, postalCode: d.shipping_postal_code,
+    },
+    items: (d.order_items ?? []).map((it: any) => {
+      const prod = Array.isArray(it.product) ? it.product[0] : it.product;
+      const seller = Array.isArray(it.seller) ? it.seller[0] : it.seller;
+      return { title: it.title, productSlug: prod?.slug ?? null, sellerName: seller?.name ?? null, qty: it.qty, priceCents: it.price_cents };
+    }),
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
 export async function getSellerApplications(): Promise<SellerApplication[]> {
   const supabase = await createClient();
   if (!supabase) return mockApplications;

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { settleOrder } from "@/features/dashboard/actions";
+import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import type { AdminOrderView } from "@/lib/data/dashboard";
+import type { OrderStatus } from "@/types";
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 
@@ -43,6 +45,7 @@ export function EscrowBoard({
               <th className="px-5 py-3 font-medium">Buyer</th>
               <th className="px-5 py-3 font-medium">Total</th>
               <th className="px-5 py-3 font-medium">Commission</th>
+              <th className="px-5 py-3 font-medium">Status</th>
               <th className="px-5 py-3 font-medium">Buyer Protection</th>
               <th className="px-5 py-3 text-right font-medium">Action</th>
             </tr>
@@ -62,6 +65,12 @@ export function EscrowBoard({
                 <td className="px-5 py-3 text-muted-foreground">{o.buyer}</td>
                 <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
                 <td className="px-5 py-3 text-muted-foreground">{formatZAR(Math.round(o.totalCents * (commissionPct / 100)))}</td>
+                <td className="px-5 py-3">
+                  {(() => {
+                    const meta = ORDER_STATUS_META[o.status as OrderStatus];
+                    return meta ? <StatusPill label={meta.label} tone={meta.tone} /> : <span className="text-xs text-muted-foreground">{o.status}</span>;
+                  })()}
+                </td>
                 <td className="px-5 py-3"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
                 <td className="px-5 py-3 text-right">
                   {o.escrow === "held" ? (

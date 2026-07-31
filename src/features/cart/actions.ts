@@ -1,6 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { ActionResult } from "@/features/dashboard/actions";
 
 export interface OrderLineInput {
   productId: string;
@@ -89,4 +91,52 @@ export async function placeOrder(input: {
   }
 
   return { ok: true, reference };
+}
+
+/**
+ * Buyer: confirm receipt of a shipped order. Releases the held payment —
+ * credits each seller's wallet (minus platform commission) the same way an
+ * admin's escrow release does — and marks the order "confirmed".
+ */
+export async function confirmDelivery(orderId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: true, fellBack: true };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in again." };
+
+  const { data: order } = await supabase
+    .from("orders").select("id,status,buyer_id,reference").eq("id", orderId).maybeSingle();
+  if (!order || order.buyer_id !== user.id) return { ok: false, error: "Order not found." };
+  if (order.status !== "shipped") return { ok: false, error: "This order isn't marked as shipped yet." };
+
+  const { data: setting } = await supabase
+    .from("commission_settings").select("pct").eq("id", 1).maybeSingle();
+  const pct = setting?.pct != null ? Number(setting.pct) : 7;
+
+  const { data: items } = await supabase
+    .from("order_items").select("seller_id,title,price_cents,qty").eq("order_id", orderId);
+
+  const txns: Array<Record<string, unknown>> = [];
+  for (const it of items ?? []) {
+    if (!it.seller_id) continue;
+    const sale = it.price_cents * it.qty;
+    const commission = Math.round(sale * (pct / 100));
+    txns.push({ seller_id: it.seller_id, type: "sale", description: `Order ${order.reference} · ${it.title}`, amount_cents: sale, status: "completed" });
+    txns.push({ seller_id: it.seller_id, type: "commission", description: `Platform commission (${pct}%)`, amount_cents: -commission, status: "completed" });
+  }
+  if (txns.length) {
+    const { error: txErr } = await supabase.from("wallet_transactions").insert(txns);
+    if (txErr) return { ok: false, error: txErr.message };
+  }
+
+  const { error } = await supabase.from("orders").update({ status: "confirmed" }).eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/account");
+  revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  revalidatePath("/seller/wallet");
+  revalidatePath("/seller/orders");
+  return { ok: true };
 }

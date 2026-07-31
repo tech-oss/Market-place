@@ -97,37 +97,33 @@ export default async function AccountPage() {
                       year: "numeric", month: "short", day: "numeric",
                     });
                     return (
-                      <li
-                        key={order.id}
-                        className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4"
-                      >
-                        <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
-                          <Package className="size-6" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs text-muted-foreground">Order {order.reference} · {date}</p>
-                          {first?.productSlug ? (
-                            <Link href={`/parts/${first.productSlug}`} className="font-semibold text-foreground hover:text-brand">
-                              {first?.title ?? "Item"}
-                            </Link>
-                          ) : (
+                      <li key={order.id}>
+                        <Link
+                          href={`/account/orders/${order.id}`}
+                          className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-neutral-300"
+                        >
+                          <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+                            <Package className="size-6" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-muted-foreground">Order {order.reference} · {date}</p>
                             <span className="font-semibold text-foreground">{first?.title ?? "Item"}</span>
-                          )}
-                          {extra > 0 && <span className="text-sm text-muted-foreground"> + {extra} more</span>}
-                          <p className="text-sm text-muted-foreground">{formatZAR(order.totalCents)}</p>
-                          {order.tracking && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Shipped via <span className="font-medium text-foreground">{order.courier}</span> · Tracking: {order.tracking}
-                              {order.shippingService ? ` · ${order.shippingService}` : ""}
-                            </p>
-                          )}
-                          {order.shippingNote && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">Note: {order.shippingNote}</p>
-                          )}
-                        </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
-                          {meta.label}
-                        </span>
+                            {extra > 0 && <span className="text-sm text-muted-foreground"> + {extra} more</span>}
+                            <p className="text-sm text-muted-foreground">{formatZAR(order.totalCents)}</p>
+                            {order.tracking && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Shipped via <span className="font-medium text-foreground">{order.courier}</span> · Tracking: {order.tracking}
+                                {order.shippingService ? ` · ${order.shippingService}` : ""}
+                              </p>
+                            )}
+                            {order.shippingNote && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">Note: {order.shippingNote}</p>
+                            )}
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
+                            {meta.label}
+                          </span>
+                        </Link>
                       </li>
                     );
                   })}
