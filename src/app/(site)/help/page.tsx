@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
+import { getCommissionPct } from "@/lib/data/dashboard";
 
 export const metadata: Metadata = {
   title: "Help Center",
   description: "Answers to common questions about buying, selling, payments and delivery.",
 };
 
-const FAQ_GROUPS = [
+function faqGroups(pct: number) { return [
   {
     title: "Buying",
     items: [
@@ -20,7 +21,7 @@ const FAQ_GROUPS = [
   {
     title: "Selling",
     items: [
-      { q: "How much does it cost to sell?", a: "Listing is free and unlimited. We charge a flat 7% commission only when an item sells." },
+      { q: "How much does it cost to sell?", a: `Listing is free and unlimited. We charge a flat ${pct}% commission only when an item sells.` },
       { q: "What do I need to register as a seller?", a: "A valid ID and proof of residence. Our team verifies these before activating your account, usually within 48 hours." },
       { q: "Can I print inventory labels?", a: "Yes — every listing can generate a printable barcode / QR label to help you manage stock." },
     ],
@@ -32,9 +33,10 @@ const FAQ_GROUPS = [
       { q: "Who handles shipping?", a: "Sellers set their own shipping cost and choose a courier such as PUDO, The Courier Guy or Aramex. You'll see the cost at checkout." },
     ],
   },
-];
+]; }
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const FAQ_GROUPS = faqGroups(await getCommissionPct());
   return (
     <>
       <PageHeader

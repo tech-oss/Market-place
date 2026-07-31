@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Reveal } from "@/components/shared/reveal";
+import { getCommissionPct } from "@/lib/data/dashboard";
 
 export const metadata: Metadata = {
   title: "Sell With Us",
@@ -19,14 +20,14 @@ export const metadata: Metadata = {
     "Sell new and used motorcycle parts to buyers across South Africa. Unlimited free listings, secure escrow payouts, and printable inventory labels.",
 };
 
-const BENEFITS = [
-  { icon: InfinityIcon, title: "Unlimited Free Listings", body: "List as many parts as you like at no cost. You only pay a flat 7% commission when an item sells." },
+function benefits(pct: number) { return [
+  { icon: InfinityIcon, title: "Unlimited Free Listings", body: `List as many parts as you like at no cost. You only pay a flat ${pct}% commission when an item sells.` },
   { icon: Truck, title: "Your Shipping, Your Way", body: "Set your own shipping cost per order and choose your preferred courier — PUDO, The Courier Guy, Aramex and more." },
   { icon: Printer, title: "Printable Inventory Labels", body: "Generate barcode / QR labels for every listing to keep your warehouse and stock perfectly organised." },
   { icon: Wallet, title: "Secure, Fast Payouts", body: "Buyers pay into escrow. Funds land in your wallet as soon as the buyer confirms delivery." },
   { icon: BadgeCheck, title: "Verified Seller Badge", body: "Approved businesses earn a trust badge that helps you win more sales." },
   { icon: FileCheck2, title: "Simple Onboarding", body: "Register your business, upload your documents, and go live once approved." },
-];
+]; }
 
 const STEPS = [
   { n: 1, title: "Register your business", body: "Tell us about your dealership, used parts dealer or workshop." },
@@ -35,7 +36,9 @@ const STEPS = [
   { n: 4, title: "List & sell", body: "Add products with fitment, print labels, and start earning." },
 ];
 
-export default function SellPage() {
+export default async function SellPage() {
+  const pct = await getCommissionPct();
+  const BENEFITS = benefits(pct);
   return (
     <>
       {/* Hero */}
@@ -53,7 +56,7 @@ export default function SellPage() {
             <p className="mt-4 max-w-lg text-white/70">
               Join hundreds of trusted sellers on the country&rsquo;s leading motorcycle
               parts marketplace. Unlimited free listings, escrow-protected payouts, and
-              a flat 7% commission — no monthly fees.
+              a flat {pct}% commission — no monthly fees.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -77,7 +80,7 @@ export default function SellPage() {
       <section className="border-b border-border bg-neutral-50">
         <Container className="grid gap-6 py-10 text-center sm:grid-cols-3">
           {[
-            { value: "7%", label: "Flat commission per sale" },
+            { value: `${pct}%`, label: "Flat commission per sale" },
             { value: "R0", label: "Listing & monthly fees" },
             { value: "48h", label: "Typical approval time" },
           ].map((s) => (

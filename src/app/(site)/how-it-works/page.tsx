@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
+import { getCommissionPct } from "@/lib/data/dashboard";
 
 export const metadata: Metadata = {
   title: "How It Works",
@@ -8,13 +9,13 @@ export const metadata: Metadata = {
     "Learn how Motorcycle Products' escrow-protected marketplace works for buyers and sellers.",
 };
 
-const BUYER = [
+function buyerSteps(pct: number) { return [
   { n: 1, title: "Find your part", body: "Search by motorcycle, category or OEM part number and confirm fitment." },
   { n: 2, title: "Place your order", body: "Pay securely — your money is held in escrow, not sent to the seller yet." },
   { n: 3, title: "Seller ships", body: "The seller dispatches your part with tracking via their chosen courier." },
   { n: 4, title: "Confirm delivery", body: "Inspect the part and confirm you're happy with your order." },
-  { n: 5, title: "Payment released", body: "Only then do we release the funds to the seller, minus our 7% commission." },
-];
+  { n: 5, title: "Payment released", body: `Only then do we release the funds to the seller, minus our ${pct}% commission.` },
+]; }
 
 const SELLER = [
   { n: 1, title: "Register & verify", body: "Sign up your business and upload your ID and proof of residence." },
@@ -24,7 +25,7 @@ const SELLER = [
   { n: 5, title: "Get paid", body: "Funds land in your wallet as soon as the buyer confirms delivery." },
 ];
 
-function Flow({ title, steps, accent }: { title: string; steps: typeof BUYER; accent: boolean }) {
+function Flow({ title, steps, accent }: { title: string; steps: typeof SELLER; accent: boolean }) {
   return (
     <div>
       <h2 className="text-2xl font-bold tracking-tight text-foreground">{title}</h2>
@@ -49,7 +50,8 @@ function Flow({ title, steps, accent }: { title: string; steps: typeof BUYER; ac
   );
 }
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const BUYER = buyerSteps(await getCommissionPct());
   return (
     <>
       <PageHeader

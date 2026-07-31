@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { Prose } from "@/components/shared/prose";
+import { getCommissionPct } from "@/lib/data/dashboard";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description: "The terms governing use of the Motorcycle Products marketplace.",
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const pct = await getCommissionPct();
   return (
     <>
       <PageHeader
@@ -35,7 +37,7 @@ export default function TermsPage() {
           <h2>3. Escrow payments</h2>
           <p>
             Buyer payments are held by the platform and released to the seller only after
-            the buyer confirms delivery. A flat commission of <strong>7%</strong> is
+            the buyer confirms delivery. A flat commission of <strong>{pct}%</strong> is
             deducted from each completed sale.
           </p>
 

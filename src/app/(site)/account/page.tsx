@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatZAR } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
-import { getBuyerOrders } from "@/lib/data/dashboard";
+import { getBuyerOrders, getCommissionPct } from "@/lib/data/dashboard";
 import { signOut } from "@/features/auth/actions";
 import type { OrderStatus } from "@/types";
 
@@ -33,7 +33,7 @@ export default async function AccountPage() {
   if (!user) redirect("/login?next=/account");
 
   const displayName = user.fullName || user.email || "Rider";
-  const orders = await getBuyerOrders();
+  const [orders, commissionPct] = await Promise.all([getBuyerOrders(), getCommissionPct()]);
 
   return (
     <>
@@ -158,7 +158,7 @@ export default async function AccountPage() {
                 <h2 className="mt-3 text-2xl font-black">Become a Seller</h2>
                 <p className="mt-2 text-sm text-white/70">
                   Turn your parts into income. Register your business, upload your ID and
-                  proof of residence, and start listing once approved. Flat 7% commission,
+                  proof of residence, and start listing once approved. Flat {commissionPct}% commission,
                   unlimited free listings.
                 </p>
                 <Link
