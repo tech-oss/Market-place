@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Check, MessageSquareText, Package, ShieldCheck, Truck } from "lucide-react";
+import { Check, Package, ShieldCheck, Truck } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { getSessionUser } from "@/lib/auth";
 import { getBuyerOrderById } from "@/lib/data/dashboard";
 import { formatZAR } from "@/lib/format";
 import { ConfirmDeliveryButton } from "@/features/cart/confirm-delivery-button";
-import { CopyTrackingButton } from "@/features/cart/copy-tracking-button";
+import { TrackShippingModal } from "@/features/cart/track-shipping-modal";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = { title: "Order Details", robots: { index: false } };
@@ -37,7 +37,7 @@ export default async function OrderDetailPage({
 
   const steps = [
     { key: "placed", label: "Order Confirmed", body: "Your payment is held under Buyer Protection.", icon: ShieldCheck, done: true },
-    { key: "shipped", label: "Shipped", body: shipped ? "See shipping details below." : "Waiting for the seller to ship.", icon: Truck, done: shipped },
+    { key: "shipped", label: "Shipped", body: shipped ? `${order.courier ?? "Courier"} · ${order.tracking}` : "Waiting for the seller to ship.", icon: Truck, done: shipped },
     { key: "received", label: "Received", body: received ? "You confirmed delivery — payment released to the seller." : "Confirm once your part arrives.", icon: Package, done: received },
   ];
 
@@ -85,6 +85,14 @@ export default async function OrderDetailPage({
                     <div>
                       <p className={`text-sm font-semibold ${s.done ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</p>
                       <p className="text-xs text-muted-foreground">{s.body}</p>
+                      {s.key === "shipped" && shipped && order.tracking && (
+                        <TrackShippingModal
+                          courier={order.courier}
+                          tracking={order.tracking}
+                          shippingService={order.shippingService}
+                          shippingNote={order.shippingNote}
+                        />
+                      )}
                     </div>
                   </li>
                 ))}
@@ -95,43 +103,6 @@ export default async function OrderDetailPage({
                   <ConfirmDeliveryButton orderId={order.id} />
                 </div>
               )}
-            </section>
-          )}
-
-          {/* Shipping details — courier, tracking, service, seller note */}
-          {order.tracking && (
-            <section className="overflow-hidden rounded-2xl border border-border bg-card">
-              <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-                <Truck className="size-4 text-brand" />
-                <h2 className="text-lg font-bold text-foreground">Shipping Details</h2>
-              </div>
-              <dl>
-                <div className="grid grid-cols-[120px_1fr] gap-4 border-b border-border bg-neutral-50 px-5 py-3 text-sm sm:grid-cols-[160px_1fr]">
-                  <dt className="text-muted-foreground">Courier</dt>
-                  <dd className="font-medium text-foreground">{order.courier || "—"}</dd>
-                </div>
-                <div className="grid grid-cols-[120px_1fr] gap-4 border-b border-border px-5 py-3 text-sm sm:grid-cols-[160px_1fr]">
-                  <dt className="text-muted-foreground">Tracking Number</dt>
-                  <dd className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono font-medium text-foreground">{order.tracking}</span>
-                    <CopyTrackingButton value={order.tracking} />
-                  </dd>
-                </div>
-                {order.shippingService && (
-                  <div className="grid grid-cols-[120px_1fr] gap-4 border-b border-border bg-neutral-50 px-5 py-3 text-sm last:border-b-0 sm:grid-cols-[160px_1fr]">
-                    <dt className="text-muted-foreground">Service</dt>
-                    <dd className="font-medium text-foreground">{order.shippingService}</dd>
-                  </div>
-                )}
-                {order.shippingNote && (
-                  <div className="grid grid-cols-[120px_1fr] gap-4 px-5 py-3 text-sm last:border-b-0 sm:grid-cols-[160px_1fr]">
-                    <dt className="flex items-center gap-1.5 text-muted-foreground">
-                      <MessageSquareText className="size-3.5" /> Note
-                    </dt>
-                    <dd className="text-foreground">{order.shippingNote}</dd>
-                  </div>
-                )}
-              </dl>
             </section>
           )}
 
