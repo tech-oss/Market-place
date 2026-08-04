@@ -153,6 +153,7 @@ export interface SellerListing {
   title: string;
   slug: string;
   sku: string;
+  itemNumber: string;
   categorySlug: string;
   priceCents: number;
   stock: number;

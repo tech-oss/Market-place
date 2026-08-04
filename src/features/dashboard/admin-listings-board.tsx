@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { conditionLabel } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
@@ -15,6 +16,7 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
   const router = useRouter();
   const [listings, setListings] = useState(initial);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const remove = async (id: string) => {
     setRemovingId(id);
@@ -26,13 +28,36 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
     setRemovingId(null);
   };
 
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? listings.filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          l.itemNumber.toLowerCase().includes(q) ||
+          l.sku.toLowerCase().includes(q) ||
+          l.brandName.toLowerCase().includes(q) ||
+          l.sellerName.toLowerCase().includes(q),
+      )
+    : listings;
+
   return (
     <SectionCard>
+      <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+        <Search className="size-4 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by item #, product name, SKU/barcode, brand or seller…"
+          className="w-full bg-transparent text-sm focus:outline-none"
+        />
+        <span className="shrink-0 text-xs text-muted-foreground">{filtered.length} items</span>
+      </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-5 py-3 font-medium">Product</th>
+              <th className="px-5 py-3 font-medium">Item #</th>
               <th className="px-5 py-3 font-medium">Seller</th>
               <th className="px-5 py-3 font-medium">Condition</th>
               <th className="px-5 py-3 font-medium">Price</th>
@@ -41,17 +66,18 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {listings.length === 0 && (
-              <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">No listings yet.</td></tr>
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet." : "No listings match your search."}</td></tr>
             )}
-            {listings.map((p) => {
+            {filtered.map((p) => {
               const meta = LISTING_STATUS_META[p.status as ListingStatus] ?? { label: p.status, tone: "gray" as const };
               return (
                 <tr key={p.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-3">
                     <p className="font-medium text-foreground">{p.title}</p>
-                    <p className="text-xs text-muted-foreground">{p.brandName}</p>
+                    <p className="text-xs text-muted-foreground">{p.brandName} · {p.sku}</p>
                   </td>
+                  <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{p.itemNumber}</td>
                   <td className="px-5 py-3 text-muted-foreground">{p.sellerName}</td>
                   <td className="px-5 py-3 text-muted-foreground">{conditionLabel(p.condition as ProductCondition)}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{formatZAR(p.priceCents)}</td>

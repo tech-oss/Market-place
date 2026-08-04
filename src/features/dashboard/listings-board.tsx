@@ -40,11 +40,14 @@ export function ListingsBoard({
     setListings(initial);
   }, [initial]);
 
-  const filtered = listings.filter(
-    (l) =>
-      l.title.toLowerCase().includes(query.toLowerCase()) ||
-      l.sku.toLowerCase().includes(query.toLowerCase()),
-  );
+  const filtered = listings.filter((l) => {
+    const q = query.toLowerCase();
+    return (
+      l.title.toLowerCase().includes(q) ||
+      l.sku.toLowerCase().includes(q) ||
+      l.itemNumber.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -63,17 +66,18 @@ export function ListingsBoard({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title or SKU…"
+            placeholder="Search by item #, title or SKU/barcode…"
             className="w-full bg-transparent text-sm focus:outline-none"
           />
           <span className="shrink-0 text-xs text-muted-foreground">{filtered.length} items</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-5 py-3 font-medium">Product</th>
+                <th className="px-5 py-3 font-medium">Item #</th>
                 <th className="px-5 py-3 font-medium">Price</th>
                 <th className="px-5 py-3 font-medium">Stock</th>
                 <th className="px-5 py-3 font-medium">Views</th>
@@ -84,7 +88,7 @@ export function ListingsBoard({
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No listings yet — add your first part.</td></tr>
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet — add your first part." : "No listings match your search."}</td></tr>
               )}
               {filtered.map((l) => {
                 const meta = LISTING_STATUS_META[l.status];
@@ -94,6 +98,7 @@ export function ListingsBoard({
                       <p className="font-medium text-foreground">{l.title}</p>
                       <p className="text-xs text-muted-foreground">{l.sku}</p>
                     </td>
+                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{l.itemNumber}</td>
                     <td className="px-5 py-3 font-medium text-foreground">{formatZAR(l.priceCents)}</td>
                     <td className="px-5 py-3 text-muted-foreground">{l.stock}</td>
                     <td className="px-5 py-3 text-muted-foreground">{l.views}</td>

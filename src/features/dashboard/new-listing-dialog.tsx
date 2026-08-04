@@ -136,6 +136,7 @@ export function NewListingDialog({
       title: input.title,
       slug: slug || `l-${Date.now()}`,
       sku: finalSku,
+      itemNumber: "Pending…",
       categorySlug,
       priceCents: input.priceCents,
       stock: input.stock,

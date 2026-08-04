@@ -19,12 +19,12 @@ export const currentSeller = {
 
 /** ---- Seller: listings ---------------------------------------------------- */
 export const sellerListings: SellerListing[] = [
-  { id: "l-1", title: "OEM Brake Lever", slug: "oem-brake-lever-bmw-s1000rr", sku: "MP-BRK-0001", categorySlug: "controls", priceCents: 210000, stock: 3, status: "active", views: 482, sold: 11, condition: "excellent-used", createdAt: daysAgo(40) },
-  { id: "l-2", title: "Chain & Sprocket Kit", slug: "chain-sprocket-kit-honda-cbr600rr", sku: "MP-ENG-0007", categorySlug: "engine", priceCents: 185000, stock: 8, status: "active", views: 356, sold: 6, condition: "new", createdAt: daysAgo(33) },
-  { id: "l-3", title: "Heated Handlebar Grips", slug: "handlebar-grips-bmw-rninet", sku: "MP-CTL-0012", categorySlug: "controls", priceCents: 38000, stock: 15, status: "active", views: 221, sold: 9, condition: "new", createdAt: daysAgo(21) },
-  { id: "l-4", title: "Clutch Master Cylinder", slug: "clutch-master-cylinder-honda-cbr1000rr", sku: "MP-CTL-0021", categorySlug: "controls", priceCents: 120000, stock: 0, status: "out-of-stock", views: 190, sold: 4, condition: "good-used", createdAt: daysAgo(15) },
-  { id: "l-5", title: "Front Fender Carbon", slug: "front-fender-carbon", sku: "MP-BDY-0033", categorySlug: "bodywork", priceCents: 265000, stock: 2, status: "pending-review", views: 12, sold: 0, condition: "new", createdAt: daysAgo(1) },
-  { id: "l-6", title: "Rear Brake Caliper", slug: "rear-brake-caliper", sku: "MP-BRK-0040", categorySlug: "brakes", priceCents: 175000, stock: 1, status: "draft", views: 0, sold: 0, condition: "used", createdAt: daysAgo(0) },
+  { id: "l-1", title: "OEM Brake Lever", slug: "oem-brake-lever-bmw-s1000rr", sku: "MP-BRK-0001", itemNumber: "MP-100001", categorySlug: "controls", priceCents: 210000, stock: 3, status: "active", views: 482, sold: 11, condition: "excellent-used", createdAt: daysAgo(40) },
+  { id: "l-2", title: "Chain & Sprocket Kit", slug: "chain-sprocket-kit-honda-cbr600rr", sku: "MP-ENG-0007", itemNumber: "MP-100002", categorySlug: "engine", priceCents: 185000, stock: 8, status: "active", views: 356, sold: 6, condition: "new", createdAt: daysAgo(33) },
+  { id: "l-3", title: "Heated Handlebar Grips", slug: "handlebar-grips-bmw-rninet", sku: "MP-CTL-0012", itemNumber: "MP-100003", categorySlug: "controls", priceCents: 38000, stock: 15, status: "active", views: 221, sold: 9, condition: "new", createdAt: daysAgo(21) },
+  { id: "l-4", title: "Clutch Master Cylinder", slug: "clutch-master-cylinder-honda-cbr1000rr", sku: "MP-CTL-0021", itemNumber: "MP-100004", categorySlug: "controls", priceCents: 120000, stock: 0, status: "out-of-stock", views: 190, sold: 4, condition: "good-used", createdAt: daysAgo(15) },
+  { id: "l-5", title: "Front Fender Carbon", slug: "front-fender-carbon", sku: "MP-BDY-0033", itemNumber: "MP-100005", categorySlug: "bodywork", priceCents: 265000, stock: 2, status: "pending-review", views: 12, sold: 0, condition: "new", createdAt: daysAgo(1) },
+  { id: "l-6", title: "Rear Brake Caliper", slug: "rear-brake-caliper", sku: "MP-BRK-0040", itemNumber: "MP-100006", categorySlug: "brakes", priceCents: 175000, stock: 1, status: "draft", views: 0, sold: 0, condition: "used", createdAt: daysAgo(0) },
 ];
 
 /** ---- Seller: orders ------------------------------------------------------ */

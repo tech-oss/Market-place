@@ -94,7 +94,7 @@ export async function getSellerListings(): Promise<SellerListing[]> {
 
   const { data } = await supabase
     .from("products")
-    .select("id,title,slug,sku,category_slug,brand_name,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at,product_images(id,url,alt,position),fitments(brand,model,year_from,year_to)")
+    .select("id,title,slug,sku,item_number,category_slug,brand_name,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at,product_images(id,url,alt,position),fitments(brand,model,year_from,year_to)")
     .eq("seller_id", seller.id)
     .order("created_at", { ascending: false });
 
@@ -103,7 +103,7 @@ export async function getSellerListings(): Promise<SellerListing[]> {
   return data.map((p: any) => {
     const fitment = Array.isArray(p.fitments) ? p.fitments[0] : p.fitments;
     return {
-      id: p.id, title: p.title, slug: p.slug, sku: p.sku, categorySlug: p.category_slug,
+      id: p.id, title: p.title, slug: p.slug, sku: p.sku, itemNumber: p.item_number ?? "—", categorySlug: p.category_slug,
       priceCents: p.price_cents, stock: p.stock, status: p.status, views: p.views,
       sold: p.sold, condition: p.condition,
       shippingCents: p.shipping_cents ?? undefined,
@@ -373,6 +373,8 @@ export interface AdminListingView {
   condition: string;
   priceCents: number;
   status: string;
+  itemNumber: string;
+  sku: string;
 }
 
 /** Admin: every listing regardless of status, for moderation. */
@@ -380,15 +382,16 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
   const supabase = await createClient();
   if (!supabase) {
     const { allProducts } = await import("@/mocks");
-    return allProducts.map((p) => ({
+    return allProducts.map((p, i) => ({
       id: p.id, slug: p.slug, title: p.title, brandName: p.brandName, sellerName: p.seller.name,
       condition: p.condition, priceCents: p.priceCents, status: "active",
+      itemNumber: `MP-${100000 + i + 1}`, sku: "—",
     }));
   }
 
   const { data } = await supabase
     .from("products")
-    .select("id, slug, title, brand_name, condition, price_cents, status, sellers(name)")
+    .select("id, slug, title, brand_name, condition, price_cents, status, item_number, sku, sellers(name)")
     .order("created_at", { ascending: false });
   if (!data) return [];
 
@@ -399,6 +402,7 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
       id: p.id, slug: p.slug ?? "", title: p.title, brandName: p.brand_name ?? "—",
       sellerName: sellerObj?.name ?? "—", condition: p.condition,
       priceCents: p.price_cents, status: p.status,
+      itemNumber: p.item_number ?? "—", sku: p.sku ?? "—",
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
