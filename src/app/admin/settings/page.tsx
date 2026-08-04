@@ -1,14 +1,22 @@
 import { PageHeading } from "@/features/dashboard/ui";
 import { CommissionForm } from "@/features/dashboard/commission-form";
-import { getCommissionPct } from "@/lib/data/dashboard";
+import { ReturnSettingsForm } from "@/features/dashboard/return-settings-form";
+import { getCommissionPct, getPlatformSettings } from "@/lib/data/dashboard";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export default async function AdminSettingsPage() {
-  const pct = await getCommissionPct();
+  const [pct, settings] = await Promise.all([getCommissionPct(), getPlatformSettings()]);
+  const live = isSupabaseConfigured();
   return (
     <>
-      <PageHeading title="Commission" description="Set the platform's flat commission on each completed sale." />
-      <CommissionForm initialPct={pct} live={isSupabaseConfigured()} />
+      <PageHeading
+        title="Commission & Returns"
+        description="Set the platform's flat commission, and where buyers ship returns back to."
+      />
+      <div className="space-y-6">
+        <CommissionForm initialPct={pct} live={live} />
+        <ReturnSettingsForm initial={settings} live={live} />
+      </div>
     </>
   );
 }

@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Check, Package, ShieldCheck, Truck } from "lucide-react";
+import { Check, Package, ShieldCheck, Truck, Undo2 } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { getSessionUser } from "@/lib/auth";
-import { getBuyerOrderById } from "@/lib/data/dashboard";
+import { getBuyerOrderById, getCommissionPct, getPlatformSettings } from "@/lib/data/dashboard";
+import { daysSince } from "@/features/dashboard/order-timing";
 import { formatZAR } from "@/lib/format";
 import { ConfirmDeliveryButton } from "@/features/cart/confirm-delivery-button";
+import { RequestReturnButton } from "@/features/cart/request-return-button";
 import { TrackShippingModal } from "@/features/cart/track-shipping-modal";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = { title: "Order Details", robots: { index: false } };
 
-const TERMINAL_META: Partial<Record<OrderStatus, { label: string; className: string }>> = {
-  disputed: { label: "Disputed", className: "bg-red-50 text-red-800 border-red-200" },
-  refunded: { label: "Refunded", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
-  cancelled: { label: "Cancelled", className: "bg-neutral-100 text-neutral-700 border-neutral-200" },
+const TERMINAL_META: Partial<Record<OrderStatus, { label: string; className: string; body: string }>> = {
+  disputed: { label: "Disputed", className: "bg-red-50 text-red-800 border-red-200", body: "We're reviewing this order with you and the seller." },
+  refunded: { label: "Refunded", className: "bg-neutral-100 text-neutral-700 border-neutral-200", body: "This order was refunded in full." },
+  returned: { label: "Returned", className: "bg-neutral-100 text-neutral-700 border-neutral-200", body: "We received your return and refunded you in full." },
+  cancelled: { label: "Cancelled", className: "bg-neutral-100 text-neutral-700 border-neutral-200", body: "This order was cancelled." },
 };
 
 export default async function OrderDetailPage({
@@ -28,17 +31,29 @@ export default async function OrderDetailPage({
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=/account/orders/${id}`);
 
-  const order = await getBuyerOrderById(id);
+  const [order, settings, commissionPct] = await Promise.all([
+    getBuyerOrderById(id),
+    getPlatformSettings(),
+    getCommissionPct(),
+  ]);
   if (!order) notFound();
 
-  const shipped = ["shipped", "delivered", "confirmed", "released"].includes(order.status);
-  const received = ["confirmed", "released"].includes(order.status);
+  const RECEIVED_OR_LATER = ["confirmed", "released", "return-requested", "returned"];
+  const shipped = ["shipped", "delivered", ...RECEIVED_OR_LATER].includes(order.status);
+  const received = RECEIVED_OR_LATER.includes(order.status);
   const terminal = TERMINAL_META[order.status];
+  const returning = order.status === "return-requested";
+
+  // The buyer can return inside the platform's window, counted from the day
+  // they confirmed the part arrived.
+  const daysConfirmed = daysSince(order.confirmedAt) ?? 0;
+  const daysLeftToReturn = settings.returnWindowDays - daysConfirmed;
+  const canReturn = order.status === "confirmed" && daysLeftToReturn >= 0;
 
   const steps = [
     { key: "placed", label: "Order Confirmed", body: "Your payment is held under Buyer Protection.", icon: ShieldCheck, done: true },
     { key: "shipped", label: "Shipped", body: shipped ? `${order.courier ?? "Courier"} · ${order.tracking}` : "Waiting for the seller to ship.", icon: Truck, done: shipped },
-    { key: "received", label: "Received", body: received ? "You confirmed delivery — payment released to the seller." : "Confirm once your part arrives.", icon: Package, done: received },
+    { key: "received", label: "Received", body: received ? "You confirmed your part arrived." : "Confirm once your part arrives.", icon: Package, done: received },
   ];
 
   return (
@@ -61,8 +76,9 @@ export default async function OrderDetailPage({
       </div>
 
       {terminal && (
-        <div className={`mb-6 rounded-2xl border p-4 text-sm font-medium ${terminal.className}`}>
-          This order is {terminal.label.toLowerCase()}.
+        <div className={`mb-6 rounded-2xl border p-4 ${terminal.className}`}>
+          <p className="text-sm font-semibold">{terminal.label}</p>
+          <p className="mt-0.5 text-sm">{terminal.body}</p>
         </div>
       )}
 
@@ -103,6 +119,52 @@ export default async function OrderDetailPage({
                   <ConfirmDeliveryButton orderId={order.id} />
                 </div>
               )}
+
+              {canReturn && (
+                <div className="mt-5 border-t border-border pt-5">
+                  <RequestReturnButton
+                    orderId={order.id}
+                    returnAddress={settings.returnAddress}
+                    returnContactName={settings.returnContactName}
+                    returnContactPhone={settings.returnContactPhone}
+                    daysLeft={daysLeftToReturn}
+                    commissionPct={commissionPct}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+
+          {returning && (
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <div className="flex items-center gap-2">
+                <Undo2 className="size-4 text-amber-700" />
+                <h2 className="text-lg font-bold text-amber-900">Return in progress</h2>
+              </div>
+              <p className="mt-2 text-sm text-amber-800">
+                Ship the part back to the address below. We&rsquo;ll refund you in full once it arrives.
+              </p>
+              {order.returnReason && (
+                <p className="mt-2 text-sm text-amber-800">Your reason: {order.returnReason}</p>
+              )}
+              <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Return to</p>
+                {settings.returnAddress ? (
+                  <>
+                    {settings.returnContactName && (
+                      <p className="mt-1 text-sm font-medium text-foreground">{settings.returnContactName}</p>
+                    )}
+                    <p className="whitespace-pre-line text-sm text-foreground">{settings.returnAddress}</p>
+                    {settings.returnContactPhone && (
+                      <p className="text-sm text-muted-foreground">{settings.returnContactPhone}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Our team will be in touch with the return address shortly.
+                  </p>
+                )}
+              </div>
             </section>
           )}
 

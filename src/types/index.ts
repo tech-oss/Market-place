@@ -31,11 +31,13 @@ export type ApprovalType = "docs_verified" | "admin_override";
 
 export type OrderStatus =
   | "pending-payment"
-  | "paid-held" // funds in escrow
+  | "paid-held" // funds held by the platform
   | "shipped"
   | "delivered"
-  | "confirmed"
-  | "released" // funds released to seller
+  | "confirmed" // buyer received it; funds still held pending admin release
+  | "released" // admin manually released funds to the seller
+  | "return-requested" // buyer is shipping the item back to the platform
+  | "returned" // return received; buyer refunded, seller charged commission
   | "disputed"
   | "refunded"
   | "cancelled";

@@ -12,7 +12,7 @@ export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
   const [done, setDone] = useState(false);
 
   const confirm = async () => {
-    if (!window.confirm("Confirm you've received this part? This releases payment to the seller.")) return;
+    if (!window.confirm("Confirm you've received this part and you're happy with it?")) return;
     setBusy(true);
     setError(null);
     const res = await confirmDelivery(orderId);
@@ -25,7 +25,7 @@ export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
   if (done) {
     return (
       <p className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-        <CheckCircle2 className="size-4" /> Thanks — payment has been released to the seller.
+        <CheckCircle2 className="size-4" /> Thanks — we&rsquo;ve recorded that your order arrived.
       </p>
     );
   }

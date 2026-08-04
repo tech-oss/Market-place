@@ -39,7 +39,7 @@ export const ADMIN_NAV: DashNavItem[] = [
   { label: "Bike Catalog", href: "/admin/catalog", icon: Bike },
   { label: "YMM Requests", href: "/admin/ymm-requests", icon: ClipboardCheck },
   { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Commission", href: "/admin/settings", icon: Percent },
+  { label: "Commission & Returns", href: "/admin/settings", icon: Percent },
 ];
 
 export const DASH_META = {

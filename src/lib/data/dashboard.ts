@@ -249,6 +249,9 @@ export interface BuyerOrderDetail {
   tracking?: string;
   shippingService?: string;
   shippingNote?: string;
+  confirmedAt?: string;
+  returnRequestedAt?: string;
+  returnReason?: string;
   shippingAddress: {
     name: string | null;
     phone: string | null;
@@ -269,7 +272,7 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
+      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
     )
     .eq("id", id)
     .eq("buyer_id", user.id)
@@ -290,6 +293,9 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
     tracking: d.tracking ?? undefined,
     shippingService: d.shipping_service ?? undefined,
     shippingNote: d.shipping_note ?? undefined,
+    confirmedAt: d.confirmed_at ?? undefined,
+    returnRequestedAt: d.return_requested_at ?? undefined,
+    returnReason: d.return_reason ?? undefined,
     shippingAddress: {
       name: d.shipping_name, phone: d.shipping_phone, address: d.shipping_address,
       city: d.shipping_city, postalCode: d.shipping_postal_code,
@@ -355,12 +361,21 @@ export interface AdminOrderView {
   courier?: string;
   tracking?: string;
   shippingService?: string;
+  confirmedAt?: string;
+  releasedAt?: string;
+  returnRequestedAt?: string;
+  returnReason?: string;
 }
 
+/**
+ * Funds are only "released" once an admin explicitly releases them — a buyer
+ * confirming delivery leaves the money held, which is what makes the manual
+ * review window possible. A completed return settles as a refund.
+ */
 const ESCROW_FROM_STATUS = (status: string): "held" | "released" | "refunded" =>
-  status === "released" || status === "confirmed"
+  status === "released"
     ? "released"
-    : status === "refunded"
+    : status === "refunded" || status === "returned"
       ? "refunded"
       : "held";
 
@@ -621,7 +636,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, order_items(seller_id, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -634,7 +649,37 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       status: o.status, escrow: ESCROW_FROM_STATUS(o.status), date: o.placed_at,
       courier: o.courier ?? undefined, tracking: o.tracking ?? undefined,
       shippingService: o.shipping_service ?? undefined,
+      confirmedAt: o.confirmed_at ?? undefined,
+      releasedAt: o.released_at ?? undefined,
+      returnRequestedAt: o.return_requested_at ?? undefined,
+      returnReason: o.return_reason ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+export interface PlatformSettings {
+  returnAddress: string;
+  returnContactName: string;
+  returnContactPhone: string;
+  returnWindowDays: number;
+}
+
+/** Platform-wide settings: the return address buyers ship to, and the return window. */
+export async function getPlatformSettings(): Promise<PlatformSettings> {
+  const fallback = { returnAddress: "", returnContactName: "", returnContactPhone: "", returnWindowDays: 5 };
+  const supabase = await createClient();
+  if (!supabase) return fallback;
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("return_address, return_contact_name, return_contact_phone, return_window_days")
+    .eq("id", 1)
+    .maybeSingle();
+  if (!data) return fallback;
+  return {
+    returnAddress: data.return_address ?? "",
+    returnContactName: data.return_contact_name ?? "",
+    returnContactPhone: data.return_contact_phone ?? "",
+    returnWindowDays: data.return_window_days ?? 5,
+  };
 }

@@ -94,9 +94,12 @@ export async function placeOrder(input: {
 }
 
 /**
- * Buyer: confirm receipt of a shipped order. Releases the held payment —
- * credits each seller's wallet (minus platform commission) the same way an
- * admin's escrow release does — and marks the order "confirmed".
+ * Buyer: confirm receipt of a shipped order.
+ *
+ * This does NOT pay the seller. Funds stay with the platform and the order
+ * moves to "confirmed", where it waits for an admin to release it manually
+ * (see settleOrder). The gap is deliberate: it keeps the money recoverable
+ * while the buyer's return window is still open.
  */
 export async function confirmDelivery(orderId: string): Promise<ActionResult> {
   const supabase = await createClient();
@@ -106,37 +109,69 @@ export async function confirmDelivery(orderId: string): Promise<ActionResult> {
   if (!user) return { ok: false, error: "Please sign in again." };
 
   const { data: order } = await supabase
-    .from("orders").select("id,status,buyer_id,reference").eq("id", orderId).maybeSingle();
+    .from("orders").select("id,status,buyer_id").eq("id", orderId).maybeSingle();
   if (!order || order.buyer_id !== user.id) return { ok: false, error: "Order not found." };
   if (order.status !== "shipped") return { ok: false, error: "This order isn't marked as shipped yet." };
 
-  const { data: setting } = await supabase
-    .from("commission_settings").select("pct").eq("id", 1).maybeSingle();
-  const pct = setting?.pct != null ? Number(setting.pct) : 7;
-
-  const { data: items } = await supabase
-    .from("order_items").select("seller_id,title,price_cents,qty").eq("order_id", orderId);
-
-  const txns: Array<Record<string, unknown>> = [];
-  for (const it of items ?? []) {
-    if (!it.seller_id) continue;
-    const sale = it.price_cents * it.qty;
-    const commission = Math.round(sale * (pct / 100));
-    txns.push({ seller_id: it.seller_id, type: "sale", description: `Order ${order.reference} · ${it.title}`, amount_cents: sale, status: "completed" });
-    txns.push({ seller_id: it.seller_id, type: "commission", description: `Platform commission (${pct}%)`, amount_cents: -commission, status: "completed" });
-  }
-  if (txns.length) {
-    const { error: txErr } = await supabase.from("wallet_transactions").insert(txns);
-    if (txErr) return { ok: false, error: txErr.message };
-  }
-
-  const { error } = await supabase.from("orders").update({ status: "confirmed" }).eq("id", orderId);
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
+    .eq("id", orderId);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/account");
   revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/admin");
   revalidatePath("/admin/orders");
-  revalidatePath("/seller/wallet");
+  revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/**
+ * Buyer: start a return. Only valid on an order the buyer has already
+ * confirmed, and only inside the platform's return window (default 5 days
+ * from confirmation). The buyer then ships the item back to the platform's
+ * return address; an admin completes it with processReturn.
+ */
+export async function requestReturn(orderId: string, reason: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: true, fellBack: true };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in again." };
+
+  const { data: order } = await supabase
+    .from("orders").select("id,status,buyer_id,confirmed_at").eq("id", orderId).maybeSingle();
+  if (!order || order.buyer_id !== user.id) return { ok: false, error: "Order not found." };
+  if (order.status !== "confirmed") {
+    return { ok: false, error: "Only orders you've marked as received can be returned." };
+  }
+
+  const { data: settings } = await supabase
+    .from("platform_settings").select("return_window_days").eq("id", 1).maybeSingle();
+  const windowDays = settings?.return_window_days ?? 5;
+
+  if (order.confirmed_at) {
+    const elapsedDays = (Date.now() - new Date(order.confirmed_at).getTime()) / 86_400_000;
+    if (elapsedDays > windowDays) {
+      return { ok: false, error: `The ${windowDays}-day return window for this order has closed.` };
+    }
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "return-requested",
+      return_requested_at: new Date().toISOString(),
+      return_reason: reason.trim() || null,
+    })
+    .eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/account");
+  revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
   revalidatePath("/seller/orders");
   return { ok: true };
 }

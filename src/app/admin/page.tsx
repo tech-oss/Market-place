@@ -1,9 +1,16 @@
 import Link from "next/link";
-import { AlertTriangle, Banknote, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, Banknote, PackageCheck, ShieldCheck, TrendingUp, Users } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { PageHeading, StatCard, SectionCard, StatusPill, MiniBarChart } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
-import { getActiveSellerCount, getAdminOrders, getCommissionPct, getSellerApplications } from "@/lib/data/dashboard";
+import { isReleaseOverdue } from "@/features/dashboard/order-timing";
+import {
+  getActiveSellerCount,
+  getAdminOrders,
+  getCommissionPct,
+  getPlatformSettings,
+  getSellerApplications,
+} from "@/lib/data/dashboard";
 import type { OrderStatus } from "@/types";
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
@@ -33,14 +40,19 @@ function last7DayRevenue(orders: { totalCents: number; date: string }[]): { data
 }
 
 export default async function AdminOverview() {
-  const [adminOrders, applications, activeSellers, commissionPct] = await Promise.all([
+  const [adminOrders, applications, activeSellers, commissionPct, settings] = await Promise.all([
     getAdminOrders(),
     getSellerApplications(),
     getActiveSellerCount(),
     getCommissionPct(),
+    getPlatformSettings(),
   ]);
   const pending = applications.filter((a) => a.status === "pending");
   const held = adminOrders.filter((o) => o.escrow === "held");
+  const overdueRelease = adminOrders.filter(
+    (o) => o.status === "confirmed" && isReleaseOverdue(o.confirmedAt, settings.returnWindowDays),
+  );
+  const pendingReturns = adminOrders.filter((o) => o.status === "return-requested");
 
   const cutoff = Date.now() - THIRTY_DAYS_MS;
   const gmvCents = adminOrders
@@ -52,6 +64,42 @@ export default async function AdminOverview() {
   return (
     <>
       <PageHeading title="Overview" description="Platform health at a glance." />
+
+      {overdueRelease.length > 0 && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600" />
+          <div className="min-w-0">
+            <p className="font-semibold text-red-900">
+              Payments need reassessing — {overdueRelease.length} order{overdueRelease.length === 1 ? "" : "s"} received by the buyer over {settings.returnWindowDays} days ago
+            </p>
+            <p className="mt-1 text-sm text-red-800">
+              {overdueRelease.map((o) => o.reference).join(", ")} — the return window has closed on{" "}
+              {overdueRelease.length === 1 ? "this order" : "these orders"}, totalling{" "}
+              {formatZAR(overdueRelease.reduce((s, o) => s + o.totalCents, 0))} still held.
+            </p>
+            <Link href="/admin/orders" className="mt-2 inline-block text-sm font-semibold text-red-900 underline">
+              Review and release →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {pendingReturns.length > 0 && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <PackageCheck className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div className="min-w-0">
+            <p className="font-semibold text-amber-900">
+              {pendingReturns.length} return{pendingReturns.length === 1 ? "" : "s"} in transit back to you
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              {pendingReturns.map((o) => o.reference).join(", ")} — mark each received once the part arrives to refund the buyer and charge the seller the {commissionPct}% return fee.
+            </p>
+            <Link href="/admin/orders" className="mt-2 inline-block text-sm font-semibold text-amber-900 underline">
+              Process returns →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="GMV (30d)" value={formatZAR(gmvCents)} icon={TrendingUp} />
@@ -88,7 +136,7 @@ export default async function AdminOverview() {
             <p className="font-bold text-foreground">{held.length} orders in Buyer Protection</p>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatZAR(held.reduce((s, o) => s + o.totalCents, 0))} currently held, awaiting delivery confirmation.
+            {formatZAR(held.reduce((s, o) => s + o.totalCents, 0))} currently held. Nothing pays out until you release it.
           </p>
           <Link href="/admin/orders" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
             Manage Buyer Protection →

@@ -430,9 +430,14 @@ export async function getKycSignedUrl(path: string): Promise<{ url?: string; err
   return { url: data.signedUrl };
 }
 
+const SETTLED_STATUSES = ["released", "refunded", "returned"];
+
 /**
- * Admin: release escrow (→ released, credits seller wallet minus commission)
- * or refund (→ refunded). Idempotent — already-settled orders are skipped.
+ * Admin: manually release the held payment (→ released, credits the seller's
+ * wallet minus commission) or refund the buyer (→ refunded).
+ *
+ * Release is always a deliberate admin action — nothing pays out automatically
+ * when the buyer confirms delivery. Idempotent: already-settled orders no-op.
  */
 export async function settleOrder(
   orderId: string,
@@ -444,7 +449,7 @@ export async function settleOrder(
   const { data: order } = await supabase
     .from("orders").select("reference,status").eq("id", orderId).single();
   if (!order) return { ok: false, error: "Order not found." };
-  if (order.status === "released" || order.status === "refunded") return { ok: true };
+  if (SETTLED_STATUSES.includes(order.status)) return { ok: true };
 
   if (outcome === "released") {
     const { data: setting } = await supabase
@@ -468,10 +473,104 @@ export async function settleOrder(
     }
   }
 
-  const { error } = await supabase.from("orders").update({ status: outcome }).eq("id", orderId);
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: outcome,
+      ...(outcome === "released" ? { released_at: new Date().toISOString() } : {}),
+    })
+    .eq("id", orderId);
   if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin");
   revalidatePath("/admin/orders");
+  revalidatePath("/account");
   revalidatePath("/seller/wallet");
+  revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/**
+ * Admin: complete a return once the item is physically back.
+ *
+ * The buyer is refunded in full (they were never charged out of the held
+ * funds, so nothing is paid to the seller). The seller is charged the
+ * platform commission as a handling fee — they were never credited for this
+ * sale, so their wallet only sees the negative commission line, which is
+ * exactly the amount they owe the platform to get the part back.
+ */
+export async function processReturn(orderId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: order } = await supabase
+    .from("orders").select("reference,status").eq("id", orderId).single();
+  if (!order) return { ok: false, error: "Order not found." };
+  if (SETTLED_STATUSES.includes(order.status)) return { ok: true };
+  if (order.status !== "return-requested") {
+    return { ok: false, error: "This order doesn't have a return in progress." };
+  }
+
+  const { data: setting } = await supabase
+    .from("commission_settings").select("pct").eq("id", 1).maybeSingle();
+  const pct = setting?.pct != null ? Number(setting.pct) : 7;
+
+  const { data: items } = await supabase
+    .from("order_items").select("seller_id,title,price_cents,qty").eq("order_id", orderId);
+
+  const txns: Array<Record<string, unknown>> = [];
+  for (const it of items ?? []) {
+    if (!it.seller_id) continue;
+    const commission = Math.round(it.price_cents * it.qty * (pct / 100));
+    if (commission <= 0) continue;
+    txns.push({
+      seller_id: it.seller_id,
+      type: "commission",
+      description: `Return fee (${pct}%) · Order ${order.reference} · ${it.title}`,
+      amount_cents: -commission,
+      status: "completed",
+    });
+  }
+  if (txns.length) {
+    const { error: txErr } = await supabase.from("wallet_transactions").insert(txns);
+    if (txErr) return { ok: false, error: txErr.message };
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "returned", returned_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/account");
+  revalidatePath("/seller/wallet");
+  revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/** Admin: update the return address buyers ship to, and the return window. */
+export async function updatePlatformSettings(input: {
+  returnAddress: string;
+  returnContactName: string;
+  returnContactPhone: string;
+  returnWindowDays: number;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({
+      return_address: input.returnAddress || null,
+      return_contact_name: input.returnContactName || null,
+      return_contact_phone: input.returnContactPhone || null,
+      return_window_days: input.returnWindowDays,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/settings");
+  revalidatePath("/account");
   return { ok: true };
 }
 

@@ -16,13 +16,16 @@ export const metadata: Metadata = {
   description: "Your orders, buyer protection status, addresses and seller tools.",
 };
 
+/** Buyer-facing wording — deliberately not the admin's payout-centric labels. */
 const STATUS_META: Record<OrderStatus, { label: string; className: string }> = {
   "pending-payment": { label: "Pending Payment", className: "bg-amber-100 text-amber-800" },
   "paid-held": { label: "In Buyer Protection", className: "bg-blue-100 text-blue-800" },
   shipped: { label: "Shipped", className: "bg-indigo-100 text-indigo-800" },
   delivered: { label: "Delivered", className: "bg-teal-100 text-teal-800" },
-  confirmed: { label: "Confirmed", className: "bg-emerald-100 text-emerald-800" },
+  confirmed: { label: "Received", className: "bg-emerald-100 text-emerald-800" },
   released: { label: "Completed", className: "bg-emerald-100 text-emerald-800" },
+  "return-requested": { label: "Return In Progress", className: "bg-amber-100 text-amber-800" },
+  returned: { label: "Returned", className: "bg-neutral-200 text-neutral-700" },
   disputed: { label: "Disputed", className: "bg-red-100 text-red-800" },
   refunded: { label: "Refunded", className: "bg-neutral-200 text-neutral-700" },
   cancelled: { label: "Cancelled", className: "bg-neutral-200 text-neutral-700" },
