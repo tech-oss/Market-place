@@ -99,7 +99,7 @@ export function StatusPill({
   tone?: keyof typeof PILL_STYLES;
 }) {
   return (
-    <span className={cn("inline-flex rounded-full px-2.5 py-1 text-xs font-semibold", PILL_STYLES[tone])}>
+    <span className={cn("inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold", PILL_STYLES[tone])}>
       {label}
     </span>
   );

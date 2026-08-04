@@ -7,7 +7,7 @@ export const ORDER_STATUS_META: Record<OrderStatus, { label: string; tone: Tone 
   "paid-held": { label: "Awaiting Shipment", tone: "amber" },
   shipped: { label: "Shipped", tone: "indigo" },
   delivered: { label: "Delivered", tone: "teal" },
-  confirmed: { label: "Received — Awaiting Release", tone: "blue" },
+  confirmed: { label: "Awaiting Release", tone: "blue" },
   released: { label: "Payment Released", tone: "green" },
   "return-requested": { label: "Return In Transit", tone: "amber" },
   returned: { label: "Returned", tone: "red" },

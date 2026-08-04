@@ -106,22 +106,34 @@ export function EscrowBoard({
 
       <SectionCard>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[1180px] text-sm">
+            <colgroup>
+              <col className="w-[130px]" />
+              <col className="w-[190px]" />
+              <col className="w-[140px]" />
+              <col className="w-[140px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+              <col className="w-[170px]" />
+              <col className="w-[110px]" />
+              <col className="w-[190px]" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-5 py-3 font-medium">Order</th>
-                <th className="px-5 py-3 font-medium">Seller</th>
-                <th className="px-5 py-3 font-medium">Buyer</th>
-                <th className="px-5 py-3 font-medium">Total</th>
-                <th className="px-5 py-3 font-medium">Commission</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Funds</th>
-                <th className="px-5 py-3 text-right font-medium">Action</th>
+              <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="px-5 py-3">Order</th>
+                <th className="px-5 py-3">Shipping</th>
+                <th className="px-5 py-3">Seller</th>
+                <th className="px-5 py-3">Buyer</th>
+                <th className="px-5 py-3">Total</th>
+                <th className="px-5 py-3">Commission</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Funds</th>
+                <th className="px-5 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {orders.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
+                <tr><td colSpan={9} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
               )}
               {orders.map((o) => {
                 const meta = ORDER_STATUS_META[o.status as OrderStatus];
@@ -129,58 +141,69 @@ export function EscrowBoard({
                 const confirmedDays = daysSince(o.confirmedAt);
                 return (
                   <tr key={o.id} className={rowTint(o, isOverdue)}>
-                    <td className="px-5 py-3 align-top">
+                    <td className="px-5 py-3.5 align-top">
                       <p className="font-medium text-foreground">{o.reference}</p>
-                      {o.tracking && (
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                          <Truck className="size-3" />
-                          {o.courier} · <span className="font-mono">{o.tracking}</span>
-                          {o.shippingService ? ` · ${o.shippingService}` : ""}
-                        </p>
+                    </td>
+                    <td className="px-5 py-3.5 align-top">
+                      {o.tracking ? (
+                        <div className="text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1 font-medium text-foreground">
+                            <Truck className="size-3 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{o.courier || "Courier"}</span>
+                          </p>
+                          <p className="mt-0.5 truncate font-mono">{o.tracking}</p>
+                          {o.shippingService && <p className="truncate">{o.shippingService}</p>}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Not shipped yet</span>
                       )}
                       {o.status === "return-requested" && o.returnReason && (
-                        <p className="mt-0.5 text-xs text-amber-800">Reason: {o.returnReason}</p>
+                        <p className="mt-1 text-xs text-amber-800">Reason: {o.returnReason}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 align-top text-muted-foreground">{o.seller}</td>
-                    <td className="px-5 py-3 align-top text-muted-foreground">{o.buyer}</td>
-                    <td className="px-5 py-3 align-top font-medium text-foreground">{formatZAR(o.totalCents)}</td>
-                    <td className="px-5 py-3 align-top text-muted-foreground">{formatZAR(Math.round(o.totalCents * (commissionPct / 100)))}</td>
-                    <td className="px-5 py-3 align-top">
+                    <td className="px-5 py-3.5 align-top text-muted-foreground">
+                      <span className="line-clamp-2">{o.seller}</span>
+                    </td>
+                    <td className="px-5 py-3.5 align-top text-muted-foreground">
+                      <span className="line-clamp-2">{o.buyer}</span>
+                    </td>
+                    <td className="px-5 py-3.5 align-top font-medium text-foreground">{formatZAR(o.totalCents)}</td>
+                    <td className="px-5 py-3.5 align-top text-muted-foreground">{formatZAR(Math.round(o.totalCents * (commissionPct / 100)))}</td>
+                    <td className="px-5 py-3.5 align-top">
                       {meta ? <StatusPill label={meta.label} tone={meta.tone} /> : <span className="text-xs text-muted-foreground">{o.status}</span>}
                       {o.status === "confirmed" && confirmedDays !== null && (
-                        <p className={`mt-1 text-[11px] font-medium ${isOverdue ? "text-red-700" : "text-muted-foreground"}`}>
+                        <p className={`mt-1.5 text-[11px] font-medium ${isOverdue ? "text-red-700" : "text-muted-foreground"}`}>
                           {confirmedDays === 0 ? "Received today" : `Received ${confirmedDays}d ago`}
                           {isOverdue ? " — review payout" : ""}
                         </p>
                       )}
                     </td>
-                    <td className="px-5 py-3 align-top"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
-                    <td className="px-5 py-3 align-top text-right">
+                    <td className="px-5 py-3.5 align-top"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
+                    <td className="px-5 py-3.5 align-top text-right">
                       {o.status === "return-requested" ? (
                         <button
                           onClick={() => completeReturn(o.id)}
                           disabled={busy === o.id}
-                          className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                          className="w-full whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
                         >
                           Mark return received
                         </button>
                       ) : o.escrow === "held" ? (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-col items-stretch gap-1.5">
                           <button
                             onClick={() => act(o.id, "released")}
                             disabled={busy === o.id}
                             title={o.status === "confirmed" ? undefined : "The buyer hasn't confirmed delivery yet"}
-                            className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+                            className="whitespace-nowrap rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
                           >
-                            Release
+                            Release payment
                           </button>
                           <button
                             onClick={() => act(o.id, "refunded")}
                             disabled={busy === o.id}
-                            className="rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                            className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
                           >
-                            Refund
+                            Refund buyer
                           </button>
                         </div>
                       ) : (
