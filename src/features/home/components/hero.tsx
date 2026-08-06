@@ -78,8 +78,17 @@ function FitmentSelects({ facets }: { facets: FitmentFacet[] }) {
     () => Array.from(new Set(facets.map((f) => f.brand))).sort(),
     [facets],
   );
+  // Model and year are optional on a listing's fitment, so only offer the
+  // ones sellers actually supplied.
   const models = useMemo(
-    () => Array.from(new Set(facets.filter((f) => !make || f.brand === make).map((f) => f.model))).sort(),
+    () =>
+      Array.from(
+        new Set(
+          facets
+            .filter((f) => (!make || f.brand === make) && f.model)
+            .map((f) => f.model as string),
+        ),
+      ).sort(),
     [facets, make],
   );
   const years = useMemo(() => {
@@ -87,6 +96,7 @@ function FitmentSelects({ facets }: { facets: FitmentFacet[] }) {
     for (const f of facets) {
       if (make && f.brand !== make) continue;
       if (model && f.model !== model) continue;
+      if (f.yearFrom == null || f.yearTo == null) continue;
       for (let y = f.yearFrom; y <= f.yearTo; y++) set.add(y);
     }
     return Array.from(set).sort((a, b) => b - a);

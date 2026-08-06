@@ -6,6 +6,7 @@ import { LISTING_STATUS_META } from "@/features/dashboard/status";
 import { getProductById } from "@/lib/data/products";
 import { getYmmRequestForProduct } from "@/lib/data/dashboard";
 import { formatZAR, conditionLabel } from "@/lib/format";
+import { hasRichText } from "@/lib/rich-text";
 import type { ListingStatus, ProductCondition } from "@/types";
 
 export default async function AdminListingDetailPage({
@@ -114,6 +115,18 @@ export default async function AdminListingDetailPage({
             )}
           </SectionCard>
 
+          {/* Description — seller-authored, sanitised */}
+          <SectionCard title="Description">
+            {hasRichText(product.description) ? (
+              <div
+                className="prose-description p-5 text-sm leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: product.description! }}
+              />
+            ) : (
+              <p className="p-5 text-sm text-muted-foreground">No description was added for this listing.</p>
+            )}
+          </SectionCard>
+
           {/* Specifications */}
           <SectionCard title="Specifications">
             <dl className="divide-y divide-border">
@@ -143,8 +156,12 @@ export default async function AdminListingDetailPage({
                 {product.fitment.map((f, i) => (
                   <div key={i} className="grid grid-cols-3 px-5 py-3 text-sm text-foreground">
                     <span>{f.brand}</span>
-                    <span>{f.model}</span>
-                    <span>{f.yearFrom}–{f.yearTo}</span>
+                    <span className={f.model ? "" : "text-muted-foreground"}>{f.model || "All models"}</span>
+                    <span className={f.yearFrom && f.yearTo ? "" : "text-muted-foreground"}>
+                      {f.yearFrom && f.yearTo
+                        ? f.yearFrom === f.yearTo ? f.yearFrom : `${f.yearFrom}–${f.yearTo}`
+                        : "All years"}
+                    </span>
                   </div>
                 ))}
               </div>

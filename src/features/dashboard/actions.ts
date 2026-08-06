@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSeller } from "@/lib/data/dashboard";
 import { sanitizeForCode128 } from "@/lib/barcode";
+import { sanitizeRichText } from "@/lib/rich-text";
 
 export interface ActionResult {
   ok: boolean;
@@ -16,6 +17,8 @@ const NOT_CONNECTED = { ok: true, fellBack: true } as const;
 
 export interface CreateListingInput {
   title: string;
+  /** Rich-text HTML from the listing form; sanitised before it's stored. */
+  description?: string;
   categorySlug: string;
   condition: string;
   priceCents: number;
@@ -23,7 +26,9 @@ export interface CreateListingInput {
   sku?: string;
   oem?: string;
   bin?: string;
+  /** Bike make — the only required part of fitment. */
   brand?: string;
+  /** Optional: the admin catalog may not have this model yet. */
   model?: string;
   yearFrom?: number;
   yearTo?: number;
@@ -78,6 +83,7 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
       slug,
       sku,
       title: input.title,
+      description: sanitizeRichText(input.description) || null,
       price_cents: input.priceCents,
       condition: input.condition,
       category_slug: input.categorySlug,
@@ -104,10 +110,14 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
       make_name: input.newYmm.makeName, model_name: input.newYmm.modelName,
       year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
     });
-  } else if (input.brand && input.model && input.yearFrom && input.yearTo) {
+  } else if (input.brand) {
+    // Model and years are optional — record whatever the seller could give us
+    // so the listing still carries its make into search facets.
     await supabase.from("fitments").insert({
-      product_id: product.id, brand: input.brand, model: input.model,
-      year_from: input.yearFrom, year_to: input.yearTo,
+      product_id: product.id, brand: input.brand,
+      model: input.model || null,
+      year_from: input.yearFrom ?? null,
+      year_to: input.yearTo ?? null,
     });
   }
 
@@ -126,6 +136,7 @@ export async function createListing(input: CreateListingInput): Promise<ActionRe
 export interface UpdateListingInput {
   id: string;
   title: string;
+  description?: string;
   categorySlug: string;
   condition: string;
   priceCents: number;
@@ -162,6 +173,7 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
 
   const patch: Record<string, unknown> = {
     title: input.title,
+    description: sanitizeRichText(input.description) || null,
     category_slug: input.categorySlug,
     condition: input.condition,
     price_cents: input.priceCents,
@@ -196,11 +208,13 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
       make_name: input.newYmm.makeName, model_name: input.newYmm.modelName,
       year_from: input.newYmm.yearFrom, year_to: input.newYmm.yearTo,
     });
-  } else if (input.brand && input.model && input.yearFrom && input.yearTo) {
+  } else if (input.brand) {
     await supabase.from("fitments").delete().eq("product_id", input.id);
     await supabase.from("fitments").insert({
-      product_id: input.id, brand: input.brand, model: input.model,
-      year_from: input.yearFrom, year_to: input.yearTo,
+      product_id: input.id, brand: input.brand,
+      model: input.model || null,
+      year_from: input.yearFrom ?? null,
+      year_to: input.yearTo ?? null,
     });
   }
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeRichText } from "@/lib/rich-text";
 import {
   allProducts as mockAll,
   featuredProducts as mockFeatured,
@@ -14,7 +15,7 @@ import type { Product } from "@/types";
  */
 
 const SELECT =
-  "id, slug, title, price_cents, compare_at_cents, condition, category_slug, brand_name, oem_numbers, stock, status, is_featured, is_new, listed_at, shipping_cents, shipping_local_cents, product_images(id,url,alt,position), fitments(brand,model,year_from,year_to), seller:sellers(id,name,slug,location,logo,rating)";
+  "id, slug, title, description, price_cents, compare_at_cents, condition, category_slug, brand_name, oem_numbers, stock, status, is_featured, is_new, listed_at, shipping_cents, shipping_local_cents, product_images(id,url,alt,position), fitments(brand,model,year_from,year_to), seller:sellers(id,name,slug,location,logo,rating)";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mapRow(r: any): Product {
@@ -27,6 +28,9 @@ function mapRow(r: any): Product {
     id: r.id,
     slug: r.slug,
     title: r.title,
+    // Sanitised on read as well as on write: sellers can update their own
+    // products through RLS without going via the listing form.
+    description: sanitizeRichText(r.description),
     priceCents: r.price_cents,
     compareAtCents: r.compare_at_cents ?? undefined,
     condition: r.condition,
@@ -252,9 +256,10 @@ export async function getBikeModelsCatalog({ includeInactive = false } = {}): Pr
 
 export interface FitmentFacet {
   brand: string;
-  model: string;
-  yearFrom: number;
-  yearTo: number;
+  /** Null when the seller listed against a make only. */
+  model: string | null;
+  yearFrom: number | null;
+  yearTo: number | null;
 }
 
 /**
@@ -268,7 +273,9 @@ export async function getFitmentFacets(): Promise<FitmentFacet[]> {
   const supabase = await createClient();
   if (!supabase) {
     return mockAll.flatMap((p) =>
-      p.fitment.map((f) => ({ brand: f.brand, model: f.model, yearFrom: f.yearFrom, yearTo: f.yearTo })),
+      p.fitment.map((f) => ({
+        brand: f.brand, model: f.model ?? null, yearFrom: f.yearFrom ?? null, yearTo: f.yearTo ?? null,
+      })),
     );
   }
 
@@ -278,7 +285,7 @@ export async function getFitmentFacets(): Promise<FitmentFacet[]> {
     .eq("products.status", "active");
 
   return (data ?? []).map((f) => ({
-    brand: f.brand, model: f.model, yearFrom: f.year_from, yearTo: f.year_to,
+    brand: f.brand, model: f.model ?? null, yearFrom: f.year_from ?? null, yearTo: f.year_to ?? null,
   }));
 }
 

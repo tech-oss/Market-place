@@ -26,10 +26,13 @@ export function filterProducts(products: Product[], params: CatalogParams): Prod
         p.brandName,
         p.categorySlug,
         ...p.oemNumbers,
+        // Model and years are optional — a listing may only name its make.
         ...p.fitment.flatMap((f) => [
           f.brand,
-          f.model,
-          ...Array.from({ length: f.yearTo - f.yearFrom + 1 }, (_, i) => String(f.yearFrom + i)),
+          f.model ?? "",
+          ...(f.yearFrom != null && f.yearTo != null
+            ? Array.from({ length: f.yearTo - f.yearFrom + 1 }, (_, i) => String(f.yearFrom! + i))
+            : []),
         ]),
       ]
         .join(" ")

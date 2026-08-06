@@ -56,11 +56,16 @@ export interface MotorcycleBrand {
 }
 
 /** A single make/model/year window a part is compatible with. */
+/**
+ * A listing's bike compatibility. Only `brand` (the make) is guaranteed —
+ * a seller can list a part before the admin catalog has their exact model or
+ * year, so the rest fill in later.
+ */
 export interface Fitment {
   brand: string;
-  model: string;
-  yearFrom: number;
-  yearTo: number;
+  model?: string | null;
+  yearFrom?: number | null;
+  yearTo?: number | null;
 }
 
 export interface Category {
@@ -103,6 +108,8 @@ export interface Product {
   id: UUID;
   slug: string;
   title: string;
+  /** Seller-authored description as sanitised HTML. Empty when not provided. */
+  description?: string;
   /** Cents in ZAR to avoid float rounding. Display via formatZAR(). */
   priceCents: number;
   compareAtCents?: number;
@@ -166,9 +173,10 @@ export interface SellerListing {
   shippingCents?: number;
   shippingLocalCents?: number;
   createdAt: string;
+  description?: string;
   brandName?: string;
   images?: { id: string; url: string; alt: string }[];
-  fitment?: { brand: string; model: string; yearFrom: number; yearTo: number };
+  fitment?: { brand: string; model?: string | null; yearFrom?: number | null; yearTo?: number | null };
 }
 
 export interface SellerOrder {

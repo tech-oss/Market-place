@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { sanitizeRichText } from "@/lib/rich-text";
 import {
   sellerListings as mockListings,
   sellerOrders as mockOrders,
@@ -94,7 +95,7 @@ export async function getSellerListings(): Promise<SellerListing[]> {
 
   const { data } = await supabase
     .from("products")
-    .select("id,title,slug,sku,item_number,category_slug,brand_name,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at,product_images(id,url,alt,position),fitments(brand,model,year_from,year_to)")
+    .select("id,title,slug,sku,item_number,description,category_slug,brand_name,price_cents,stock,status,views,sold,condition,shipping_cents,shipping_local_cents,created_at,product_images(id,url,alt,position),fitments(brand,model,year_from,year_to)")
     .eq("seller_id", seller.id)
     .order("created_at", { ascending: false });
 
@@ -109,6 +110,7 @@ export async function getSellerListings(): Promise<SellerListing[]> {
       shippingCents: p.shipping_cents ?? undefined,
       shippingLocalCents: p.shipping_local_cents ?? undefined,
       createdAt: p.created_at,
+      description: sanitizeRichText(p.description),
       brandName: p.brand_name ?? undefined,
       images: (p.product_images ?? [])
         .sort((a: any, b: any) => a.position - b.position)

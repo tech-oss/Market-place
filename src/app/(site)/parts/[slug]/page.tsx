@@ -9,6 +9,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { ProductGrid } from "@/components/shared/product-grid";
 import { conditionLabel } from "@/lib/format";
+import { hasRichText, richTextToPlain } from "@/lib/rich-text";
 import { categories } from "@/mocks";
 import { getProductBySlug, getProductReviews, getRelatedProducts } from "@/lib/data/products";
 import { ProductGallery } from "@/features/product/product-gallery";
@@ -26,7 +27,9 @@ export async function generateMetadata({
   if (!product) return { title: "Part not found" };
   return {
     title: product.title,
-    description: `${product.title} — ${conditionLabel(product.condition)} ${product.brandName} part from ${product.seller.name}, ${product.seller.location}.`,
+    description:
+      richTextToPlain(product.description, 160) ||
+      `${product.title} — ${conditionLabel(product.condition)} ${product.brandName} part from ${product.seller.name}, ${product.seller.location}.`,
   };
 }
 
@@ -159,6 +162,17 @@ export default async function ProductPage({
         </div>
       </div>
 
+      {/* Seller's description — sanitised HTML from the listing form */}
+      {hasRichText(product.description) && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-xl font-bold text-foreground">Description</h2>
+          <div
+            className="prose-description max-w-3xl text-sm leading-relaxed text-foreground"
+            dangerouslySetInnerHTML={{ __html: product.description! }}
+          />
+        </section>
+      )}
+
       {/* Specs + fitment */}
       <div className="mt-12 grid gap-8 lg:grid-cols-2">
         <section>
@@ -187,10 +201,19 @@ export default async function ProductPage({
             {product.fitment.map((f, i) => (
               <div key={i} className="grid grid-cols-3 px-4 py-3 text-sm text-foreground">
                 <span>{f.brand}</span>
-                <span>{f.model}</span>
-                <span>{f.yearFrom}–{f.yearTo}</span>
+                <span className={f.model ? "" : "text-muted-foreground"}>{f.model || "All models"}</span>
+                <span className={f.yearFrom && f.yearTo ? "" : "text-muted-foreground"}>
+                  {f.yearFrom && f.yearTo
+                    ? f.yearFrom === f.yearTo ? f.yearFrom : `${f.yearFrom}–${f.yearTo}`
+                    : "All years"}
+                </span>
               </div>
             ))}
+            {product.fitment.length === 0 && (
+              <div className="px-4 py-3 text-sm text-muted-foreground">
+                No compatibility details supplied — check with the seller.
+              </div>
+            )}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Always confirm the OEM part number against your vehicle before purchase.

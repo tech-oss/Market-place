@@ -133,6 +133,25 @@
   100% { transform: translateX(310%); }
 }
 
+/* Seller-authored part descriptions — shared by the editor and the public
+   product page so what a seller types is what a buyer sees. Only the tags
+   allowlisted in lib/rich-text.ts can appear here. */
+.prose-description > * + * { margin-top: 0.75em; }
+.prose-description h3 { font-size: 1.05rem; font-weight: 700; }
+.prose-description h4 { font-size: 0.95rem; font-weight: 700; }
+.prose-description ul { list-style: disc; padding-left: 1.25rem; }
+.prose-description ol { list-style: decimal; padding-left: 1.25rem; }
+.prose-description li { margin-top: 0.25em; }
+.prose-description blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.875rem;
+  color: var(--muted-foreground);
+}
+.prose-description strong, .prose-description b { font-weight: 700; }
+.prose-description em, .prose-description i { font-style: italic; }
+.prose-description u { text-decoration: underline; }
+.prose-description s { text-decoration: line-through; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

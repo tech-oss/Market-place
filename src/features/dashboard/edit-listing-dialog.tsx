@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { conditionOptions } from "@/mocks";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeForCode128 } from "@/lib/barcode";
+import { RichTextEditor } from "@/components/shared/rich-text-editor";
+import { FitmentPicker, type ResolvedFitment } from "@/features/dashboard/fitment-picker";
 import type { ProductCondition, SellerListing } from "@/types";
 import type { UpdateListingInput } from "@/features/dashboard/actions";
 import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
@@ -28,6 +30,7 @@ export function EditListingDialog({
   bikeModels: BikeModel[];
 }) {
   const [title, setTitle] = useState(listing.title);
+  const [description, setDescription] = useState(listing.description ?? "");
   const [categorySlug, setCategorySlug] = useState(listing.categorySlug);
   const [condition, setCondition] = useState<ProductCondition>(listing.condition);
   const [price, setPrice] = useState(String(listing.priceCents / 100));
@@ -70,42 +73,23 @@ export function EditListingDialog({
 
   const removeImage = (url: string) => setImages((prev) => prev.filter((u) => u !== url));
 
-  // Compatibility: pick an existing catalog make/model, or request a new one.
-  const [fitmentMode, setFitmentMode] = useState<"catalog" | "request">("catalog");
-  const initialMakeId = bikeMakes.find(
-    (m) => m.name.toLowerCase() === (listing.fitment?.brand ?? listing.brandName ?? "").toLowerCase(),
-  )?.id ?? bikeMakes[0]?.id ?? "";
-  const [makeId, setMakeId] = useState(initialMakeId);
-  const modelsForMake = useMemo(() => bikeModels.filter((m) => m.makeId === makeId), [bikeModels, makeId]);
-  const initialModelId = modelsForMake.find(
-    (m) => m.name.toLowerCase() === (listing.fitment?.model ?? "").toLowerCase(),
-  )?.id ?? modelsForMake[0]?.id ?? "";
-  const [modelId, setModelId] = useState(initialModelId);
-  const selectedModel = modelsForMake.find((m) => m.id === modelId);
-
-  const [reqMake, setReqMake] = useState("");
-  const [reqModel, setReqModel] = useState("");
-  const [reqYearFrom, setReqYearFrom] = useState("");
-  const [reqYearTo, setReqYearTo] = useState("");
-
-  const changeMake = (id: string) => {
-    setMakeId(id);
-    const first = bikeModels.find((m) => m.makeId === id);
-    setModelId(first?.id ?? "");
-  };
+  const [fitment, setFitment] = useState<ResolvedFitment>({});
+  const [fitmentError, setFitmentError] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    const isRequest = fitmentMode === "request";
-    const reqYf = parseInt(reqYearFrom, 10);
-    const reqYt = parseInt(reqYearTo, 10);
-    const selectedMake = bikeMakes.find((m) => m.id === makeId);
+    if (!fitment.brand && !fitment.newYmm) {
+      setFitmentError("Pick the bike make this part fits, or request a new one.");
+      return;
+    }
+    setFitmentError(null);
+    setSaving(true);
 
     await onSave({
       id: listing.id,
       title: title.trim() || listing.title,
+      description,
       categorySlug,
       condition,
       priceCents: Math.round(Number(price || 0) * 100),
@@ -114,13 +98,7 @@ export function EditListingDialog({
       shippingCents: shipNational ? Math.round(Number(shipNational) * 100) : 0,
       shippingLocalCents: shipLocal ? Math.round(Number(shipLocal) * 100) : undefined,
       imageUrls: images,
-      brand: isRequest ? undefined : selectedMake?.name,
-      model: isRequest ? undefined : selectedModel?.name,
-      yearFrom: isRequest ? undefined : selectedModel?.yearFrom,
-      yearTo: isRequest ? undefined : selectedModel?.yearTo,
-      newYmm: isRequest && reqMake.trim() && reqModel.trim() && Number.isFinite(reqYf) && Number.isFinite(reqYt)
-        ? { makeName: reqMake.trim(), modelName: reqModel.trim(), yearFrom: reqYf, yearTo: reqYt }
-        : undefined,
+      ...fitment,
     });
     setSaving(false);
   };
@@ -232,51 +210,26 @@ export function EditListingDialog({
 
           {/* Compatibility */}
           <div className="sm:col-span-2">
-            <div className="mb-1 flex items-center justify-between">
-              <label className={labelCls}>Compatibility (make / model / years)</label>
-              <button
-                type="button"
-                onClick={() => setFitmentMode(fitmentMode === "catalog" ? "request" : "catalog")}
-                className="text-xs font-medium text-brand hover:underline"
-              >
-                {fitmentMode === "catalog" ? "Can't find your bike? Request it" : "Use existing catalog instead"}
-              </button>
-            </div>
+            <FitmentPicker
+              bikeMakes={bikeMakes}
+              bikeModels={bikeModels}
+              titleHint={title}
+              initial={{
+                brand: listing.fitment?.brand ?? listing.brandName,
+                model: listing.fitment?.model,
+                yearFrom: listing.fitment?.yearFrom,
+                yearTo: listing.fitment?.yearTo,
+              }}
+              onChange={setFitment}
+            />
+            {fitmentError && <p className="mt-1.5 text-[11px] text-red-600">{fitmentError}</p>}
+          </div>
 
-            {fitmentMode === "catalog" ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <select value={makeId} onChange={(e) => changeMake(e.target.value)} className={field}>
-                    {bikeMakes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                  <select value={modelId} onChange={(e) => setModelId(e.target.value)} disabled={modelsForMake.length === 0} className={field}>
-                    {modelsForMake.length === 0 && <option value="">No models yet for this make</option>}
-                    {modelsForMake.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.yearFrom}–{m.yearTo})</option>
-                    ))}
-                  </select>
-                </div>
-                {modelsForMake.length === 0 && (
-                  <p className="mt-1.5 text-[11px] text-amber-700">
-                    No models are set up for this make yet — use “Request it” above to propose one.
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <input value={reqMake} onChange={(e) => setReqMake(e.target.value)} placeholder="Make, e.g. Indian" className={field} />
-                  <input value={reqModel} onChange={(e) => setReqModel(e.target.value)} placeholder="Model, e.g. FTR 1200" className={field} />
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <input type="number" value={reqYearFrom} onChange={(e) => setReqYearFrom(e.target.value)} placeholder="Year from" className={field} />
-                  <input type="number" value={reqYearTo} onChange={(e) => setReqYearTo(e.target.value)} placeholder="Year to" className={field} />
-                </div>
-                <p className="mt-1.5 text-[11px] text-amber-700">
-                  Submitting this will hold the listing in Pending Review until an admin approves the new make/model/year.
-                </p>
-              </>
-            )}
+          <div className="sm:col-span-2">
+            <label className={labelCls}>
+              Description <span className="font-normal text-muted-foreground">— optional</span>
+            </label>
+            <RichTextEditor value={description} onChange={setDescription} />
           </div>
         </div>
 
