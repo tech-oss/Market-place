@@ -12,7 +12,7 @@ const BARCODE_OPTS = {
   width: 1.4,
   height: 42,
   displayValue: true,
-  fontSize: 8,
+  fontSize: 13,
   fontOptions: "bold",
   margin: 0,
   background: "#ffffff",
@@ -79,6 +79,8 @@ function buildBarcodeSvg(sku: string): string {
  */
 function printLabel(listing: SellerListing) {
   const barcodeSvg = buildBarcodeSvg(listing.sku);
+  const make = listing.fitment?.brand;
+  const labelTitle = make ? `${make} ${listing.title}` : listing.title;
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -101,7 +103,7 @@ function printLabel(listing: SellerListing) {
 <body>
   <div class="label">
     ${barcodeSvg}
-    <p class="title">${escapeHtml(listing.title)}</p>
+    <p class="title">${escapeHtml(labelTitle)}</p>
     <p class="price">${escapeHtml(formatZAR(listing.priceCents))}</p>
   </div>
 </body>
@@ -136,6 +138,8 @@ function printLabel(listing: SellerListing) {
  * surprises between what you see and what comes out of the printer.
  */
 export function ProductLabel({ listing }: { listing: SellerListing }) {
+  const make = listing.fitment?.brand;
+  const labelTitle = make ? `${make} ${listing.title}` : listing.title;
   return (
     <div
       id="printable-label"
@@ -143,7 +147,7 @@ export function ProductLabel({ listing }: { listing: SellerListing }) {
       style={{ width: "90mm", height: "33mm" }}
     >
       <Barcode value={listing.sku} />
-      <p className="mt-[0.5mm] w-full truncate text-[3mm] leading-tight">{listing.title}</p>
+      <p className="mt-[0.5mm] w-full truncate text-[3mm] leading-tight">{labelTitle}</p>
       <p className="mt-[0.3mm] text-[3.6mm] font-black leading-tight">{formatZAR(listing.priceCents)}</p>
     </div>
   );
