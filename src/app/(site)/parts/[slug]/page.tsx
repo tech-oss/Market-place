@@ -98,8 +98,13 @@ export default async function ProductPage({
             </h1>
             {product.fitment[0] && (
               <p className="mt-1 text-muted-foreground">
-                Fits {product.fitment[0].brand} {product.fitment[0].model} (
-                {product.fitment[0].yearFrom}–{product.fitment[0].yearTo})
+                Fits {[
+                  product.fitment[0].brand,
+                  product.fitment[0].model || undefined,
+                  product.fitment[0].yearFrom && product.fitment[0].yearTo
+                    ? `(${product.fitment[0].yearFrom}–${product.fitment[0].yearTo})`
+                    : undefined,
+                ].filter(Boolean).join(" ")}
               </p>
             )}
             {productReviews.length > 0 && (

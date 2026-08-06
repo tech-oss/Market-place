@@ -27,7 +27,7 @@ export function CompactProductCard({ product }: { product: Product }) {
         {product.title}
       </h3>
       <p className="line-clamp-1 text-xs text-muted-foreground">
-        {fitment ? `${fitment.brand} ${fitment.model}` : product.brandName}
+        {fitment ? [fitment.brand, fitment.model || undefined].filter(Boolean).join(" ") : product.brandName}
       </p>
       <div className="mt-2 flex items-center justify-between">
         <span className="font-bold text-foreground">{formatZAR(product.priceCents)}</span>

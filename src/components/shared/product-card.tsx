@@ -10,7 +10,11 @@ import { ConditionBadge } from "./condition-badge";
 export function ProductCard({ product }: { product: Product }) {
   const fitment = product.fitment[0];
   const fitmentLabel = fitment
-    ? `${fitment.brand} ${fitment.model} (${fitment.yearFrom}-${fitment.yearTo})`
+    ? [
+        fitment.brand,
+        fitment.model || undefined,
+        fitment.yearFrom && fitment.yearTo ? `(${fitment.yearFrom}-${fitment.yearTo})` : undefined,
+      ].filter(Boolean).join(" ")
     : product.brandName;
 
   return (
