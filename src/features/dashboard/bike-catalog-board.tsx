@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Power, Trash2 } from "lucide-react";
+import { Pencil, Plus, Power, Search, Trash2 } from "lucide-react";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import {
   createBikeMake,
@@ -30,11 +30,30 @@ export function BikeCatalogBoard({
   const [models, setModels] = useState(initialModels);
   const [busy, setBusy] = useState<string | null>(null);
   const [newMake, setNewMake] = useState("");
+  const [query, setQuery] = useState("");
 
   const [modelMakeId, setModelMakeId] = useState(initialMakes[0]?.id ?? "");
   const [modelName, setModelName] = useState("");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
+
+  const q = query.trim().toLowerCase();
+  const yearMatch = (yearFrom: number, yearTo: number) => {
+    if (!/^\d+$/.test(q)) return false;
+    const n = Number(q);
+    if (n >= yearFrom && n <= yearTo) return true;
+    return String(yearFrom).includes(q) || String(yearTo).includes(q);
+  };
+
+  const filteredMakes = q ? makes.filter((m) => m.name.toLowerCase().includes(q)) : makes;
+  const filteredModels = q
+    ? models.filter(
+        (m) =>
+          m.makeName.toLowerCase().includes(q) ||
+          m.name.toLowerCase().includes(q) ||
+          yearMatch(m.yearFrom, m.yearTo),
+      )
+    : models;
 
   const refresh = (res: { ok: boolean; fellBack?: boolean }) => {
     if (res.ok && !res.fellBack) router.refresh();
@@ -115,6 +134,21 @@ export function BikeCatalogBoard({
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-white px-4 py-3">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by make, model or year…"
+          className="w-full bg-transparent text-sm focus:outline-none"
+        />
+        {q && (
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {filteredMakes.length} make{filteredMakes.length === 1 ? "" : "s"} · {filteredModels.length} model{filteredModels.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
+
       <SectionCard title="Makes">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -126,10 +160,10 @@ export function BikeCatalogBoard({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {makes.length === 0 && (
-                <tr><td colSpan={3} className="px-5 py-8 text-center text-muted-foreground">No makes yet.</td></tr>
+              {filteredMakes.length === 0 && (
+                <tr><td colSpan={3} className="px-5 py-8 text-center text-muted-foreground">{q ? "No makes match your search." : "No makes yet."}</td></tr>
               )}
-              {makes.map((m) => (
+              {filteredMakes.map((m) => (
                 <tr key={m.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-3 font-medium text-foreground">{m.name}</td>
                   <td className="px-5 py-3 text-muted-foreground">{m.partCount}</td>
@@ -172,10 +206,10 @@ export function BikeCatalogBoard({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {models.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">No models yet — add one below.</td></tr>
+              {filteredModels.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">{q ? "No models match your search." : "No models yet — add one below."}</td></tr>
               )}
-              {models.map((m) => (
+              {filteredModels.map((m) => (
                 <tr key={m.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-3 text-muted-foreground">{m.makeName}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{m.name}</td>
