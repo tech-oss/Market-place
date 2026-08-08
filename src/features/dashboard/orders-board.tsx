@@ -7,7 +7,22 @@ import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { markOrderShipped } from "@/features/dashboard/actions";
+import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
 import type { SellerOrder } from "@/types";
+
+const ESCROW_LABEL: Record<string, string> = {
+  "pending-payment": "Pending",
+  "paid-held": "On hold",
+  shipped: "On hold",
+  delivered: "On hold",
+  confirmed: "On hold",
+  released: "Released",
+  "return-requested": "On hold",
+  returned: "Refunded",
+  disputed: "On hold",
+  refunded: "Refunded",
+  cancelled: "Cancelled",
+};
 
 const field = "w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30";
 const labelCls = "mb-1 block text-xs font-semibold text-foreground";
@@ -46,10 +61,11 @@ function ShipDialog({ order, onClose, onShip }: {
   );
 }
 
-export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; live: boolean }) {
+export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: SellerOrder[]; live: boolean; commissionPct: number }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initial);
   const [shipping, setShipping] = useState<SellerOrder | null>(null);
+  const [invoice, setInvoice] = useState<SellerOrder | null>(null);
 
   return (
     <SectionCard>
@@ -102,11 +118,19 @@ export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; l
                   <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
                   <td className="px-5 py-3"><StatusPill label={meta.label} tone={meta.tone} /></td>
                   <td className="px-5 py-3 text-right">
-                    {o.status === "paid-held" ? (
-                      <button onClick={() => setShipping(o)} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
-                        <Truck className="size-3.5" /> Ship
+                    <div className="flex flex-col items-end gap-1.5">
+                      {o.status === "paid-held" && (
+                        <button onClick={() => setShipping(o)} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800">
+                          <Truck className="size-3.5" /> Ship
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setInvoice(o)}
+                        className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                      >
+                        View invoice
                       </button>
-                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </div>
                   </td>
                 </tr>
               );
@@ -124,6 +148,22 @@ export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; l
             setShipping(null);
             if (live) { const res = await markOrderShipped(shipping.id, courier, tracking, service, note); if (res.ok && !res.fellBack) router.refresh(); }
           }}
+        />
+      )}
+
+      {invoice && (
+        <InvoiceDialog
+          perspective="seller"
+          reference={invoice.reference}
+          date={invoice.placedAt}
+          counterpartyLabel="Buyer"
+          counterpartyName={invoice.buyerName}
+          fundsStatusLabel={ESCROW_LABEL[invoice.status] ?? invoice.status}
+          subtotalCents={invoice.totalCents}
+          shippingCents={invoice.shippingCents ?? 0}
+          totalCents={invoice.totalCents + (invoice.shippingCents ?? 0)}
+          commissionPct={commissionPct}
+          onClose={() => setInvoice(null)}
         />
       )}
     </SectionCard>

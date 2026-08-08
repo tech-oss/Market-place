@@ -361,6 +361,8 @@ export interface AdminOrderView {
   reference: string;
   seller: string;
   buyer: string;
+  subtotalCents: number;
+  shippingCents: number;
   totalCents: number;
   status: string;
   escrow: "held" | "released" | "refunded";
@@ -640,11 +642,16 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
   const supabase = await createClient();
   if (!supabase) {
     const { adminOrders } = await import("@/mocks/dashboard");
-    return adminOrders.map((o) => ({ id: o.reference, ...o }));
+    return adminOrders.map((o) => ({
+      id: o.reference,
+      subtotalCents: Math.round(o.totalCents * 0.94),
+      shippingCents: Math.round(o.totalCents * 0.06),
+      ...o,
+    }));
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, order_items(seller_id, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -653,7 +660,10 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
     const sellerObj = Array.isArray(firstItem?.sellers) ? firstItem.sellers[0] : firstItem?.sellers;
     return {
       id: o.id, reference: o.reference, seller: sellerObj?.name ?? "—",
-      buyer: o.buyer_name ?? "—", totalCents: o.total_cents,
+      buyer: o.buyer_name ?? "—",
+      subtotalCents: o.subtotal_cents ?? 0,
+      shippingCents: o.shipping_cents ?? 0,
+      totalCents: o.total_cents,
       status: o.status, escrow: ESCROW_FROM_STATUS(o.status), date: o.placed_at,
       courier: o.courier ?? undefined, tracking: o.tracking ?? undefined,
       shippingService: o.shipping_service ?? undefined,

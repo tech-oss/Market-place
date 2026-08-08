@@ -6,12 +6,14 @@ import { AlertTriangle, PackageCheck, Truck } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { processReturn, settleOrder } from "@/features/dashboard/actions";
+import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { daysSince, isReleaseOverdue } from "@/features/dashboard/order-timing";
 import type { AdminOrderView } from "@/lib/data/dashboard";
 import type { OrderStatus } from "@/types";
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
+const ESCROW_LABEL = { held: "On hold", released: "Released", refunded: "Refunded" } as const;
 
 /** Rows needing an explicit admin decision get a tinted background so they stand out. */
 function rowTint(o: AdminOrderView, overdue: boolean): string {
@@ -34,6 +36,7 @@ export function EscrowBoard({
   const router = useRouter();
   const [orders, setOrders] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
+  const [invoice, setInvoice] = useState<AdminOrderView | null>(null);
 
   const act = async (id: string, outcome: "released" | "refunded") => {
     const verb = outcome === "released" ? "Release payment to the seller" : "Refund the buyer";
@@ -186,35 +189,43 @@ export function EscrowBoard({
                     </td>
                     <td className="px-5 py-3.5 align-top"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
                     <td className="px-5 py-3.5 align-top text-right">
-                      {o.status === "return-requested" ? (
+                      <div className="flex flex-col items-stretch gap-1.5">
+                        {o.status === "return-requested" ? (
+                          <button
+                            onClick={() => completeReturn(o.id)}
+                            disabled={busy === o.id}
+                            className="w-full whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                          >
+                            Mark return received
+                          </button>
+                        ) : o.escrow === "held" ? (
+                          <>
+                            <button
+                              onClick={() => act(o.id, "released")}
+                              disabled={busy === o.id}
+                              title={o.status === "confirmed" ? undefined : "The buyer hasn't confirmed delivery yet"}
+                              className="whitespace-nowrap rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+                            >
+                              Release payment
+                            </button>
+                            <button
+                              onClick={() => act(o.id, "refunded")}
+                              disabled={busy === o.id}
+                              className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                            >
+                              Refund buyer
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Settled</span>
+                        )}
                         <button
-                          onClick={() => completeReturn(o.id)}
-                          disabled={busy === o.id}
-                          className="w-full whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                          onClick={() => setInvoice(o)}
+                          className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                         >
-                          Mark return received
+                          View invoice
                         </button>
-                      ) : o.escrow === "held" ? (
-                        <div className="flex flex-col items-stretch gap-1.5">
-                          <button
-                            onClick={() => act(o.id, "released")}
-                            disabled={busy === o.id}
-                            title={o.status === "confirmed" ? undefined : "The buyer hasn't confirmed delivery yet"}
-                            className="whitespace-nowrap rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
-                          >
-                            Release payment
-                          </button>
-                          <button
-                            onClick={() => act(o.id, "refunded")}
-                            disabled={busy === o.id}
-                            className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
-                          >
-                            Refund buyer
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Settled</span>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -223,6 +234,22 @@ export function EscrowBoard({
           </table>
         </div>
       </SectionCard>
+
+      {invoice && (
+        <InvoiceDialog
+          perspective="admin"
+          reference={invoice.reference}
+          date={invoice.date}
+          counterpartyLabel="Seller"
+          counterpartyName={invoice.seller}
+          fundsStatusLabel={ESCROW_LABEL[invoice.escrow]}
+          subtotalCents={invoice.subtotalCents}
+          shippingCents={invoice.shippingCents}
+          totalCents={invoice.totalCents}
+          commissionPct={commissionPct}
+          onClose={() => setInvoice(null)}
+        />
+      )}
     </div>
   );
 }
