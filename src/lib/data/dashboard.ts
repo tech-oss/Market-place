@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { sanitizeRichText } from "@/lib/rich-text";
 import {
@@ -45,7 +45,7 @@ export async function getCurrentSeller(): Promise<CurrentSeller | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const { data: existing } = await supabase
@@ -214,7 +214,7 @@ export interface BuyerOrderView {
 export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const { data } = await supabase
@@ -272,7 +272,7 @@ export interface BuyerOrderDetail {
 export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | null> {
   const supabase = await createClient();
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const { data } = await supabase

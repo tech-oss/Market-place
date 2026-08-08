@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 
 export interface BuyerAddress {
   id: string;
@@ -15,7 +15,7 @@ export interface BuyerAddress {
 export async function getBuyerAddresses(): Promise<BuyerAddress[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const { data } = await supabase
@@ -42,7 +42,7 @@ export interface BuyerProfile {
 export async function getBuyerProfile(): Promise<BuyerProfile | null> {
   const supabase = await createClient();
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const { data } = await supabase

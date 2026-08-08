@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 
 export type ChatScope = "buyer" | "seller" | "admin";
@@ -16,7 +16,7 @@ export interface ConversationView {
 export async function getUnreadMap(): Promise<Record<string, number>> {
   const supabase = await createClient();
   if (!supabase) return {};
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return {};
   const { data } = await supabase.rpc("my_unread");
   const map: Record<string, number> = {};
@@ -57,7 +57,7 @@ export interface ThreadView {
 export async function listConversations(scope: ChatScope): Promise<ConversationView[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const base =

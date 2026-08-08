@@ -12,10 +12,13 @@ export const metadata: Metadata = {
 };
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSessionUser();
+  const [user, unread, seller] = await Promise.all([
+    getSessionUser(),
+    getUnreadTotal(),
+    getCurrentSeller(),
+  ]);
   if (user && user.role !== "seller" && user.role !== "admin") redirect("/account");
 
-  const [unread, seller] = await Promise.all([getUnreadTotal(), getCurrentSeller()]);
   const accountName = seller?.name || user?.fullName || undefined;
   const accountInitials = accountName
     ? accountName

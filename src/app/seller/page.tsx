@@ -38,7 +38,23 @@ export default async function SellerOverview() {
   const walletBalanceCents = wallet.balanceCents;
   const activeListings = sellerListings.filter((l) => l.status === "active").length;
   const inEscrow = sellerOrders.filter((o) => o.status === "paid-held" || o.status === "shipped").length;
-  const totalSalesCents = sellerOrders.reduce((s, o) => s + o.totalCents, 0);
+
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const last30 = sellerOrders.filter((o) => now - new Date(o.placedAt).getTime() < 30 * DAY_MS);
+  const prev30 = sellerOrders.filter((o) => {
+    const age = now - new Date(o.placedAt).getTime();
+    return age >= 30 * DAY_MS && age < 60 * DAY_MS;
+  });
+  const totalSalesCents = last30.reduce((s, o) => s + o.totalCents, 0);
+  const prevSalesCents = prev30.reduce((s, o) => s + o.totalCents, 0);
+  const salesTrend = prevSalesCents > 0
+    ? { value: `${Math.abs(Math.round(((totalSalesCents - prevSalesCents) / prevSalesCents) * 100))}%`, up: totalSalesCents >= prevSalesCents }
+    : totalSalesCents > 0 ? { value: "New", up: true } : undefined;
+  const newInEscrow24h = sellerOrders.filter(
+    (o) => (o.status === "paid-held" || o.status === "shipped") && now - new Date(o.placedAt).getTime() < DAY_MS,
+  ).length;
+
   const trend = last7DayTrend(sellerOrders);
 
   return (
@@ -53,9 +69,14 @@ export default async function SellerOverview() {
       </PageHeading>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Sales (30d)" value={formatZAR(totalSalesCents)} icon={TrendingUp} trend={{ value: "12.4%", up: true }} />
+        <StatCard label="Total Sales (30d)" value={formatZAR(totalSalesCents)} icon={TrendingUp} trend={salesTrend} />
         <StatCard label="Active Listings" value={String(activeListings)} icon={Package} />
-        <StatCard label="Orders in Buyer Protection" value={String(inEscrow)} icon={Receipt} trend={{ value: "2 new", up: true }} />
+        <StatCard
+          label="Orders in Buyer Protection"
+          value={String(inEscrow)}
+          icon={Receipt}
+          trend={newInEscrow24h > 0 ? { value: `${newInEscrow24h} new`, up: true } : undefined}
+        />
         <StatCard label="Wallet Balance" value={formatZAR(walletBalanceCents)} icon={Wallet} />
       </div>
 

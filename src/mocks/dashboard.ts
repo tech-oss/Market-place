@@ -55,18 +55,6 @@ export const sellerSalesTrend = [4200, 3100, 5600, 2400, 6800, 5200, 7890];
 /** ---- Admin: seller applications ----------------------------------------- */
 export const sellerApplications: SellerApplication[] = [];
 
-/** ---- Admin: platform stats ---------------------------------------------- */
-export const adminStats = {
-  gmvCents: 128_45000, // R128,450
-  commissionCents: 8_99150, // R8,991.50
-  activeSellers: 468,
-  pendingApprovals: 3,
-  ordersInEscrow: 42,
-  disputes: 2,
-};
-
-export const adminRevenueTrend = [8200, 9100, 7600, 11200, 9800, 12400, 12845];
-
 export interface AdminOrderRow {
   reference: string;
   seller: string;
