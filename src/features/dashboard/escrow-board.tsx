@@ -160,6 +160,12 @@ export function EscrowBoard({
                       {o.status === "return-requested" && o.returnReason && (
                         <p className="mt-1 text-xs text-amber-800">Reason: {o.returnReason}</p>
                       )}
+                      {o.status === "return-requested" && o.returnPhotoUrl && (
+                        <a href={o.returnPhotoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={o.returnPhotoUrl} alt="Return photo" className="size-12 rounded-lg border border-amber-200 object-cover" />
+                        </a>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 align-top text-muted-foreground">
                       <span className="line-clamp-2">{o.seller}</span>

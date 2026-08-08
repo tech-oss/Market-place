@@ -194,6 +194,9 @@ export interface SellerOrder {
   shippingNote?: string;
   shippingCents?: number;
   placedAt: string;
+  returnRequestedAt?: string;
+  returnReason?: string;
+  returnPhotoUrl?: string;
 }
 
 export type WalletTxnType = "sale" | "commission" | "payout" | "refund";

@@ -131,7 +131,7 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
 
   const { data } = await supabase
     .from("order_items")
-    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at)")
+    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at, return_requested_at, return_reason, return_photo_url)")
     .eq("seller_id", seller.id);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -143,6 +143,9 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
       status: o?.status, courier: o?.courier ?? undefined, tracking: o?.tracking ?? undefined,
       shippingService: o?.shipping_service ?? undefined, shippingNote: o?.shipping_note ?? undefined,
       shippingCents: o?.shipping_cents ?? undefined, placedAt: o?.placed_at,
+      returnRequestedAt: o?.return_requested_at ?? undefined,
+      returnReason: o?.return_reason ?? undefined,
+      returnPhotoUrl: o?.return_photo_url ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -254,6 +257,7 @@ export interface BuyerOrderDetail {
   confirmedAt?: string;
   returnRequestedAt?: string;
   returnReason?: string;
+  returnPhotoUrl?: string;
   shippingAddress: {
     name: string | null;
     phone: string | null;
@@ -274,7 +278,7 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
+      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, return_photo_url, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
     )
     .eq("id", id)
     .eq("buyer_id", user.id)
@@ -298,6 +302,7 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
     confirmedAt: d.confirmed_at ?? undefined,
     returnRequestedAt: d.return_requested_at ?? undefined,
     returnReason: d.return_reason ?? undefined,
+    returnPhotoUrl: d.return_photo_url ?? undefined,
     shippingAddress: {
       name: d.shipping_name, phone: d.shipping_phone, address: d.shipping_address,
       city: d.shipping_city, postalCode: d.shipping_postal_code,
@@ -367,6 +372,7 @@ export interface AdminOrderView {
   releasedAt?: string;
   returnRequestedAt?: string;
   returnReason?: string;
+  returnPhotoUrl?: string;
 }
 
 /**
@@ -638,7 +644,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, order_items(seller_id, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -655,6 +661,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       releasedAt: o.released_at ?? undefined,
       returnRequestedAt: o.return_requested_at ?? undefined,
       returnReason: o.return_reason ?? undefined,
+      returnPhotoUrl: o.return_photo_url ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */

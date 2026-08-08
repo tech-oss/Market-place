@@ -80,6 +80,22 @@ export function SellerOrdersBoard({ initial, live }: { initial: SellerOrder[]; l
                         {o.courier} · {o.tracking}{o.shippingService ? ` · ${o.shippingService}` : ""}
                       </p>
                     )}
+                    {(o.status === "return-requested" || o.status === "returned") && (
+                      <div className="mt-1 max-w-[240px] rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                        <p className="font-semibold">
+                          {o.status === "return-requested"
+                            ? "Buyer is returning this to us"
+                            : "Returned — 10% fee charged to your wallet"}
+                        </p>
+                        {o.returnReason && <p className="mt-0.5 text-amber-800">Reason: {o.returnReason}</p>}
+                        {o.returnPhotoUrl && (
+                          <a href={o.returnPhotoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={o.returnPhotoUrl} alt="Return photo" className="size-10 rounded-md border border-amber-200 object-cover" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">{o.productTitle} × {o.qty}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.buyerName}</td>

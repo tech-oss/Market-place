@@ -147,6 +147,10 @@ export default async function OrderDetailPage({
               {order.returnReason && (
                 <p className="mt-2 text-sm text-amber-800">Your reason: {order.returnReason}</p>
               )}
+              {order.returnPhotoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={order.returnPhotoUrl} alt="Return photo" className="mt-2 size-20 rounded-lg border border-amber-200 object-cover" />
+              )}
               <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Return to</p>
                 {settings.returnAddress ? (

@@ -133,7 +133,7 @@ export async function confirmDelivery(orderId: string): Promise<ActionResult> {
  * from confirmation). The buyer then ships the item back to the platform's
  * return address; an admin completes it with processReturn.
  */
-export async function requestReturn(orderId: string, reason: string): Promise<ActionResult> {
+export async function requestReturn(orderId: string, reason: string, photoUrl?: string): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return { ok: true, fellBack: true };
 
@@ -164,6 +164,7 @@ export async function requestReturn(orderId: string, reason: string): Promise<Ac
       status: "return-requested",
       return_requested_at: new Date().toISOString(),
       return_reason: reason.trim() || null,
+      return_photo_url: photoUrl || null,
     })
     .eq("id", orderId);
   if (error) return { ok: false, error: error.message };

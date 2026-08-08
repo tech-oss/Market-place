@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Undo2, X } from "lucide-react";
+import { ImagePlus, Loader2, Undo2, X } from "lucide-react";
 import { requestReturn } from "@/features/cart/actions";
+import { createClient } from "@/lib/supabase/client";
 
 export function RequestReturnButton({
   orderId,
@@ -25,12 +26,33 @@ export function RequestReturnButton({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const uploadPhoto = async (file: File) => {
+    setUploadError(null);
+    const supabase = createClient();
+    if (!supabase) { setUploadError("Image storage isn't connected."); return; }
+    setUploading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); setUploadError("Please sign in again."); return; }
+
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/${orderId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("return-photos").upload(path, file, { upsert: true });
+    if (error) { setUploadError(error.message); setUploading(false); return; }
+    const { data } = supabase.storage.from("return-photos").getPublicUrl(path);
+    setPhotoUrl(data.publicUrl);
+    setUploading(false);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await requestReturn(orderId, reason);
+    const res = await requestReturn(orderId, reason, photoUrl ?? undefined);
     setBusy(false);
     if (!res.ok) { setError(res.error ?? "Something went wrong. Please try again."); return; }
     setOpen(false);
@@ -92,6 +114,41 @@ export function RequestReturnButton({
               placeholder="e.g. Doesn't fit my bike, not as described…"
               className="mt-1 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
             />
+
+            <label className="mt-4 block text-xs font-semibold text-foreground">
+              Photo of the part <span className="font-normal text-muted-foreground">— optional</span>
+            </label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+            />
+            {photoUrl ? (
+              <div className="mt-1.5 flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photoUrl} alt="Return photo" className="size-16 rounded-lg border border-border object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setPhotoUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-input px-3 py-2 text-xs font-medium text-muted-foreground hover:border-brand hover:text-brand disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+                {uploading ? "Uploading…" : "Add a photo"}
+              </button>
+            )}
+            {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
 
             <p className="mt-3 rounded-xl bg-neutral-50 px-3.5 py-2.5 text-[11px] text-muted-foreground">
               The seller is charged a {commissionPct}% handling fee on returned orders. Your refund is not reduced by it.
