@@ -52,6 +52,28 @@ export async function placeOrder(input: {
   const subtotal = input.lines.reduce((s, l) => s + l.priceCents * l.qty, 0);
   const reference = `MP-${Math.floor(10000 + Math.random() * 89999)}`;
 
+  // Reserve stock first, atomically per line, so two buyers can't both
+  // check out the last unit. If any line fails (out of stock / raced),
+  // put back what we already reserved and abort before an order exists.
+  const realLines = input.lines.filter((l) => UUID.test(l.productId));
+  const decremented: OrderLineInput[] = [];
+  for (const line of realLines) {
+    const { data: rows, error: decError } = await supabase
+      .rpc("decrement_product_stock", { p_id: line.productId, p_qty: line.qty });
+    if (decError || !rows || rows.length === 0) {
+      for (const done of decremented) {
+        await supabase.rpc("increment_product_stock", { p_id: done.productId, p_qty: done.qty });
+      }
+      return { ok: false, error: `${line.title} doesn't have enough stock left. Please update your cart.` };
+    }
+    decremented.push(line);
+  }
+  const rollbackStock = async () => {
+    for (const done of decremented) {
+      await supabase.rpc("increment_product_stock", { p_id: done.productId, p_qty: done.qty });
+    }
+  };
+
   const { data: order, error } = await supabase
     .from("orders")
     .insert({
@@ -73,6 +95,7 @@ export async function placeOrder(input: {
 
   if (error || !order) {
     console.error("placeOrder: order insert failed", error);
+    await rollbackStock();
     return { ok: false, error: "Could not place your order. Please try again." };
   }
 
@@ -87,6 +110,7 @@ export async function placeOrder(input: {
   const { error: itemsError } = await supabase.from("order_items").insert(items);
   if (itemsError) {
     console.error("placeOrder: order_items insert failed", itemsError);
+    await rollbackStock();
     return { ok: false, error: "Could not place your order. Please try again." };
   }
 
