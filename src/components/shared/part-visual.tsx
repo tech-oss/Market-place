@@ -220,8 +220,17 @@ export function ProductVisual({
   dark?: boolean;
 }) {
   if (image?.url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={image.url} alt={alt} className={cn("object-cover", className)} />;
+    // The wrapping element owns the fixed box (aspect ratio / size classes from
+    // `className`); the img is absolutely positioned inside it so an oddly-shaped
+    // source photo (portrait, ultra-wide, huge) can never inflate that box — it just
+    // gets cropped via object-cover, keeping every card the same size regardless of
+    // what the seller uploaded.
+    return (
+      <span className={cn("relative block overflow-hidden", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image.url} alt={alt} className="absolute inset-0 size-full object-cover" />
+      </span>
+    );
   }
   return <PartVisual kind={kind} alt={alt} className={className} dark={dark} />;
 }

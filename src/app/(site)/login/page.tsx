@@ -45,7 +45,12 @@ function LoginForm() {
         </div>
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Don&rsquo;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-brand hover:underline">Create one</Link>
+          <Link
+            href={`/register?next=${encodeURIComponent(next)}`}
+            className="font-semibold text-brand hover:underline"
+          >
+            Create one
+          </Link>
         </p>
       </div>
     </Container>

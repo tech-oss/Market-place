@@ -23,7 +23,9 @@ const SELLER_TYPES = [
 ] as const;
 
 function RegisterForm() {
-  const initialRole = useSearchParams().get("role") === "seller" ? "seller" : "buyer";
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get("role") === "seller" ? "seller" : "buyer";
+  const next = searchParams.get("next") ?? "";
   const [role, setRole] = useState<"buyer" | "seller">(initialRole);
   const [sellerType, setSellerType] = useState<string>("individual");
   const [state, action, pending] = useActionState<AuthState, FormData>(signUp, {});
@@ -54,6 +56,7 @@ function RegisterForm() {
 
           <form action={action} className="mt-4 space-y-4">
             <input type="hidden" name="role" value={role} />
+            <input type="hidden" name="next" value={next} />
             <div>
               <label className="mb-1 block text-xs font-semibold text-foreground">Full name</label>
               <input name="fullName" required className="w-full rounded-lg border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" />
@@ -95,7 +98,12 @@ function RegisterForm() {
         </div>
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-brand hover:underline">Sign in</Link>
+          <Link
+            href={`/login?next=${encodeURIComponent(next)}`}
+            className="font-semibold text-brand hover:underline"
+          >
+            Sign in
+          </Link>
         </p>
       </div>
     </Container>

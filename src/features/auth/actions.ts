@@ -33,6 +33,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "");
+  const next = String(formData.get("next") ?? "");
   const role = formData.get("role") === "seller" ? "seller" : "buyer";
   const rawSellerType = String(formData.get("sellerType") ?? "individual");
   const sellerType = ["individual", "parts_dealer", "accessories_dealer"].includes(rawSellerType)
@@ -50,9 +51,11 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  // New sellers land on verification (upload ID + proof of residence + banking); they may skip.
-  // New buyers land on a quick, skippable profile/address step.
-  redirect(role === "seller" ? "/seller/profile?welcome=1" : "/account/profile?welcome=1");
+  // New sellers always land on verification (upload ID + proof of residence + banking).
+  // New buyers go straight back to where they were trying to go (e.g. checkout), if any;
+  // otherwise they land on a quick, skippable profile/address step.
+  if (role === "seller") redirect("/seller/profile?welcome=1");
+  redirect(next || "/account/profile?welcome=1");
 }
 
 export async function signOut(): Promise<void> {
