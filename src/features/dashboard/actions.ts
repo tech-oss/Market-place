@@ -171,6 +171,9 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
   const seller = await getCurrentSeller();
   if (!seller) return { ok: false, error: "No seller account found for this user." };
 
+  const { data: existing } = await supabase
+    .from("products").select("status").eq("id", input.id).eq("seller_id", seller.id).maybeSingle();
+
   const patch: Record<string, unknown> = {
     title: input.title,
     description: sanitizeRichText(input.description) || null,
@@ -182,6 +185,15 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
     shipping_cents: input.shippingCents ?? 0,
     shipping_local_cents: input.shippingLocalCents ?? null,
   };
+
+  // Stock edits drive the out-of-stock status directly: restocking brings a
+  // listing back live, and zeroing it out takes it down — same transition
+  // the atomic decrement/increment RPCs apply when orders are placed.
+  if (existing?.status === "out-of-stock" && input.stock > 0) {
+    patch.status = "active";
+  } else if (existing && existing.status !== "out-of-stock" && input.stock <= 0) {
+    patch.status = "out-of-stock";
+  }
 
   if (input.newYmm) {
     patch.brand_name = input.newYmm.makeName;
