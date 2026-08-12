@@ -163,7 +163,8 @@ export type ListingStatus =
   | "draft"
   | "out-of-stock"
   | "pending-review"
-  | "awaiting-verification";
+  | "awaiting-verification"
+  | "archived";
 
 export interface SellerListing {
   id: UUID;

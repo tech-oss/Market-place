@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, QrCode, Search } from "lucide-react";
+import { Archive, Pencil, QrCode, Search, Trash2 } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { LISTING_STATUS_META } from "@/features/dashboard/status";
 import { LabelDialog } from "@/features/dashboard/product-label";
 import { NewListingDialog } from "@/features/dashboard/new-listing-dialog";
 import { EditListingDialog } from "@/features/dashboard/edit-listing-dialog";
-import { createListing, updateListing } from "@/features/dashboard/actions";
+import { archiveListing, createListing, deleteListingPermanently, updateListing } from "@/features/dashboard/actions";
 import type { SellerListing } from "@/types";
 import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
 
@@ -33,6 +33,23 @@ export function ListingsBoard({
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const archive = async (l: SellerListing) => {
+    if (!window.confirm(`Move "${l.title}" to your sold archive? It will come off the live site immediately.`)) return;
+    setBusy(l.id);
+    setListings((prev) => prev.map((p) => (p.id === l.id ? { ...p, status: "archived" } : p)));
+    if (live) { const res = await archiveListing(l.id); if (res.ok && !res.fellBack) router.refresh(); }
+    setBusy(null);
+  };
+
+  const remove = async (l: SellerListing) => {
+    if (!window.confirm(`Permanently delete "${l.title}"? This can't be undone.`)) return;
+    setBusy(l.id);
+    setListings((prev) => prev.filter((p) => p.id !== l.id));
+    if (live) { const res = await deleteListingPermanently(l.id); if (res.ok && !res.fellBack) router.refresh(); }
+    setBusy(null);
+  };
 
   // Keep local state in sync after router.refresh() re-fetches `initial`
   // from the server (e.g. after creating or editing a listing).
@@ -114,6 +131,22 @@ export function ListingsBoard({
                           className="inline-flex items-center gap-1.5 rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                         >
                           <Pencil className="size-3.5" /> Edit
+                        </button>
+                        {l.status !== "archived" && (
+                          <button
+                            onClick={() => archive(l)}
+                            disabled={busy === l.id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                          >
+                            <Archive className="size-3.5" /> Archive
+                          </button>
+                        )}
+                        <button
+                          onClick={() => remove(l)}
+                          disabled={busy === l.id}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <Trash2 className="size-3.5" /> Delete
                         </button>
                       </div>
                     </td>

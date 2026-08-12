@@ -245,6 +245,54 @@ export async function updateListing(input: UpdateListingInput): Promise<ActionRe
   return { ok: true };
 }
 
+/**
+ * Seller: move a listing to the sold archive. Archived listings are pulled
+ * off the live site the same way draft/out-of-stock listings already are
+ * (every public query filters status = 'active'), but the row — and its
+ * sales history, images and fitment — stays intact for the seller's records.
+ */
+export async function archiveListing(productId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found." };
+
+  const { error } = await supabase
+    .from("products")
+    .update({ status: "archived" })
+    .eq("id", productId)
+    .eq("seller_id", seller.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
+/**
+ * Seller: permanently delete a listing. Images and fitments cascade-delete
+ * with it; past order_items keep their own title/price/qty snapshot and
+ * just lose the product reference (product_id → null), so order history
+ * and invoices are unaffected.
+ */
+export async function deleteListingPermanently(productId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const seller = await getCurrentSeller();
+  if (!seller) return { ok: false, error: "No seller account found." };
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", productId)
+    .eq("seller_id", seller.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/seller/listings");
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
 /** Admin: unpublish a listing (moderation "Remove"). Sets it back to draft
  *  rather than deleting, so the seller can see and fix it. */
 export async function removeListing(productId: string): Promise<ActionResult> {
