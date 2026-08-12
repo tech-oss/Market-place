@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Pencil, QrCode, Search, Trash2 } from "lucide-react";
+import { Archive, Download, Loader2, Pencil, QrCode, Search, Trash2 } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { LISTING_STATUS_META } from "@/features/dashboard/status";
@@ -10,6 +10,7 @@ import { LabelDialog } from "@/features/dashboard/product-label";
 import { NewListingDialog } from "@/features/dashboard/new-listing-dialog";
 import { EditListingDialog } from "@/features/dashboard/edit-listing-dialog";
 import { archiveListing, createListing, deleteListingPermanently, updateListing } from "@/features/dashboard/actions";
+import { exportInventoryToExcel } from "@/features/dashboard/export-inventory";
 import type { SellerListing } from "@/types";
 import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
 
@@ -19,12 +20,14 @@ export function ListingsBoard({
   bikeMakes,
   bikeModels,
   categories,
+  sellerName,
 }: {
   initial: SellerListing[];
   live: boolean;
   bikeMakes: BikeMake[];
   bikeModels: BikeModel[];
   categories: CatalogCategory[];
+  sellerName: string;
 }) {
   const router = useRouter();
   const [listings, setListings] = useState<SellerListing[]>(initial);
@@ -34,6 +37,16 @@ export function ListingsBoard({
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      await exportInventoryToExcel(listings, categories, sellerName);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const archive = async (l: SellerListing) => {
     if (!window.confirm(`Move "${l.title}" to your sold archive? It will come off the live site immediately.`)) return;
@@ -68,7 +81,15 @@ export function ListingsBoard({
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-end">
+      <div className="mb-6 flex items-center justify-end gap-3">
+        <button
+          onClick={exportExcel}
+          disabled={exporting || listings.length === 0}
+          className="inline-flex items-center gap-2 rounded-lg border border-input px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-60"
+        >
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {exporting ? "Exporting…" : "Export to Excel"}
+        </button>
         <button
           onClick={() => setAdding(true)}
           className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90"

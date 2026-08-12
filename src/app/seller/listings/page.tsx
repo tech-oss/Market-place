@@ -14,7 +14,14 @@ export default async function SellerListingsPage() {
   return (
     <>
       <PageHeading title="Listings" description="Manage your products, stock and inventory labels." />
-      <ListingsBoard initial={listings} live={Boolean(seller)} bikeMakes={bikeMakes} bikeModels={bikeModels} categories={categories} />
+      <ListingsBoard
+        initial={listings}
+        live={Boolean(seller)}
+        bikeMakes={bikeMakes}
+        bikeModels={bikeModels}
+        categories={categories}
+        sellerName={seller?.name ?? "Seller"}
+      />
     </>
   );
 }
