@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Banknote, FileText, PackageCheck, Truck } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, Banknote, FileText, PackageCheck, Search, Truck } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { cancelEftOrder, confirmEftPayment, getPaymentProofSignedUrl, processReturn, settleOrder } from "@/features/dashboard/actions";
@@ -21,6 +21,12 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 const ESCROW_LABEL = { held: "On hold", released: "Released", refunded: "Refunded" } as const;
+
+type AdminSort = "date-desc" | "date-asc" | "status";
+
+function formatOrderDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" });
+}
 
 /** Rows needing an explicit admin decision get a tinted background so they stand out. */
 function rowTint(o: AdminOrderView, overdue: boolean): string {
@@ -44,6 +50,26 @@ export function EscrowBoard({
   const [orders, setOrders] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<AdminOrderView | null>(null);
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<AdminSort>("date-desc");
+
+  const visibleOrders = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? orders.filter((o) =>
+          o.reference.toLowerCase().includes(q) ||
+          o.seller.toLowerCase().includes(q) ||
+          o.buyer.toLowerCase().includes(q) ||
+          o.productTitles.some((t) => t.toLowerCase().includes(q)),
+        )
+      : orders;
+
+    const sorted = [...filtered];
+    if (sortBy === "date-desc") sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    else if (sortBy === "date-asc") sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    else if (sortBy === "status") sorted.sort((a, b) => a.status.localeCompare(b.status));
+    return sorted;
+  }, [orders, query, sortBy]);
 
   const confirmEft = async (id: string) => {
     if (!window.confirm("Confirm this EFT payment was received? The order moves to Awaiting Shipment and the seller's Ship Now button activates.")) return;
@@ -137,10 +163,33 @@ export function EscrowBoard({
       </div>
 
       <SectionCard>
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by order #, product, seller or buyer…"
+            className="min-w-[220px] flex-1 bg-transparent text-sm focus:outline-none"
+          />
+          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <ArrowUpDown className="size-3.5" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as AdminSort)}
+              className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-brand/30"
+            >
+              <option value="date-desc">Date (newest first)</option>
+              <option value="date-asc">Date (oldest first)</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+          <span className="shrink-0 text-xs text-muted-foreground">{visibleOrders.length} of {orders.length} orders</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-sm">
+          <table className="w-full min-w-[1280px] text-sm">
             <colgroup>
               <col className="w-[130px]" />
+              <col className="w-[110px]" />
               <col className="w-[190px]" />
               <col className="w-[140px]" />
               <col className="w-[140px]" />
@@ -153,6 +202,7 @@ export function EscrowBoard({
             <thead>
               <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <th className="px-5 py-3">Order</th>
+                <th className="px-5 py-3">Date</th>
                 <th className="px-5 py-3">Shipping</th>
                 <th className="px-5 py-3">Seller</th>
                 <th className="px-5 py-3">Buyer</th>
@@ -165,9 +215,12 @@ export function EscrowBoard({
             </thead>
             <tbody className="divide-y divide-border">
               {orders.length === 0 && (
-                <tr><td colSpan={9} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
+                <tr><td colSpan={10} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
               )}
-              {orders.map((o) => {
+              {orders.length > 0 && visibleOrders.length === 0 && (
+                <tr><td colSpan={10} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
+              )}
+              {visibleOrders.map((o) => {
                 const meta = ORDER_STATUS_META[o.status as OrderStatus];
                 const isOverdue = o.status === "confirmed" && isReleaseOverdue(o.confirmedAt, releaseAfterDays);
                 const confirmedDays = daysSince(o.confirmedAt);
@@ -175,6 +228,9 @@ export function EscrowBoard({
                   <tr key={o.id} className={rowTint(o, isOverdue)}>
                     <td className="px-5 py-3.5 align-top">
                       <p className="font-medium text-foreground">{o.reference}</p>
+                    </td>
+                    <td className="px-5 py-3.5 align-top text-xs text-muted-foreground">
+                      {formatOrderDate(o.date)}
                     </td>
                     <td className="px-5 py-3.5 align-top">
                       {o.tracking ? (

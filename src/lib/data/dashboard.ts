@@ -397,6 +397,7 @@ export interface AdminOrderView {
   paymentStatus: PaymentStatus;
   paymentDeadline?: string;
   paymentProofUrl?: string;
+  productTitles: string[];
 }
 
 /**
@@ -670,12 +671,13 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       shippingCents: Math.round(o.totalCents * 0.06),
       paymentMethod: "online" as PaymentMethod,
       paymentStatus: "confirmed" as PaymentStatus,
+      productTitles: [] as string[],
       ...o,
     }));
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, order_items(seller_id, title, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -700,6 +702,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       paymentStatus: (o.payment_status ?? "confirmed") as PaymentStatus,
       paymentDeadline: o.payment_deadline ?? undefined,
       paymentProofUrl: o.payment_proof_url ?? undefined,
+      productTitles: (o.order_items ?? []).map((it: any) => it.title as string),
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */

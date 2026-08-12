@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Truck, X } from "lucide-react";
+import { ArrowUpDown, Search, Truck, X } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { markOrderShipped } from "@/features/dashboard/actions";
 import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
 import type { SellerOrder } from "@/types";
+
+type SellerSort = "date-desc" | "date-asc" | "status";
+
+function formatOrderDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" });
+}
 
 const ESCROW_LABEL: Record<string, string> = {
   "pending-payment": "Pending",
@@ -66,14 +72,52 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
   const [orders, setOrders] = useState(initial);
   const [shipping, setShipping] = useState<SellerOrder | null>(null);
   const [invoice, setInvoice] = useState<SellerOrder | null>(null);
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SellerSort>("date-desc");
+
+  const visibleOrders = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? orders.filter((o) => o.reference.toLowerCase().includes(q) || o.productTitle.toLowerCase().includes(q))
+      : orders;
+
+    const sorted = [...filtered];
+    if (sortBy === "date-desc") sorted.sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+    else if (sortBy === "date-asc") sorted.sort((a, b) => new Date(a.placedAt).getTime() - new Date(b.placedAt).getTime());
+    else if (sortBy === "status") sorted.sort((a, b) => a.status.localeCompare(b.status));
+    return sorted;
+  }, [orders, query, sortBy]);
 
   return (
     <SectionCard>
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by order # or product…"
+          className="min-w-[200px] flex-1 bg-transparent text-sm focus:outline-none"
+        />
+        <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <ArrowUpDown className="size-3.5" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SellerSort)}
+            className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-brand/30"
+          >
+            <option value="date-desc">Date (newest first)</option>
+            <option value="date-asc">Date (oldest first)</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground">{visibleOrders.length} of {orders.length} orders</span>
+      </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-5 py-3 font-medium">Order</th>
+              <th className="px-5 py-3 font-medium">Date</th>
               <th className="px-5 py-3 font-medium">Product</th>
               <th className="px-5 py-3 font-medium">Buyer</th>
               <th className="px-5 py-3 font-medium">Total</th>
@@ -83,9 +127,12 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
           </thead>
           <tbody className="divide-y divide-border">
             {orders.length === 0 && (
-              <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
             )}
-            {orders.map((o) => {
+            {orders.length > 0 && visibleOrders.length === 0 && (
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
+            )}
+            {visibleOrders.map((o) => {
               const meta = ORDER_STATUS_META[o.status];
               return (
                 <tr key={o.id} className="hover:bg-neutral-50">
@@ -113,6 +160,7 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
                       </div>
                     )}
                   </td>
+                  <td className="px-5 py-3 text-xs text-muted-foreground">{formatOrderDate(o.placedAt)}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.productTitle} × {o.qty}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.buyerName}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
