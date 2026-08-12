@@ -103,16 +103,18 @@ export default async function OrderDetailPage({
                   Payment deadline: {new Date(order.paymentDeadline).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" })}
                 </p>
               )}
-              <div className="mt-4">
-                <DoTransferButton
-                  orderId={order.id}
-                  reference={order.reference}
-                  totalCents={order.totalCents}
-                  deadline={order.paymentDeadline}
-                  settings={paymentSettings}
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90"
-                />
-              </div>
+              {order.paymentStatus === "pending" && (
+                <div className="mt-4">
+                  <DoTransferButton
+                    orderId={order.id}
+                    reference={order.reference}
+                    totalCents={order.totalCents}
+                    deadline={order.paymentDeadline}
+                    settings={paymentSettings}
+                    className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90"
+                  />
+                </div>
+              )}
             </section>
           )}
 
