@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowUpDown, Banknote, FileText, PackageCheck, Search, Truck } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import { cancelEftOrder, confirmEftPayment, getPaymentProofSignedUrl, processReturn, settleOrder } from "@/features/dashboard/actions";
 import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
@@ -186,8 +187,9 @@ export function EscrowBoard({
           <span className="shrink-0 text-xs text-muted-foreground">{visibleOrders.length} of {orders.length} orders</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1280px] text-sm">
+          <table className="w-full min-w-[1340px] text-sm">
             <colgroup>
+              <col className="w-[70px]" />
               <col className="w-[130px]" />
               <col className="w-[110px]" />
               <col className="w-[190px]" />
@@ -201,6 +203,7 @@ export function EscrowBoard({
             </colgroup>
             <thead>
               <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="px-5 py-3">Image</th>
                 <th className="px-5 py-3">Order</th>
                 <th className="px-5 py-3">Date</th>
                 <th className="px-5 py-3">Shipping</th>
@@ -215,10 +218,10 @@ export function EscrowBoard({
             </thead>
             <tbody className="divide-y divide-border">
               {orders.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
+                <tr><td colSpan={11} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
               )}
               {orders.length > 0 && visibleOrders.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
+                <tr><td colSpan={11} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
               )}
               {visibleOrders.map((o) => {
                 const meta = ORDER_STATUS_META[o.status as OrderStatus];
@@ -226,6 +229,9 @@ export function EscrowBoard({
                 const confirmedDays = daysSince(o.confirmedAt);
                 return (
                   <tr key={o.id} className={rowTint(o, isOverdue)}>
+                    <td className="px-5 py-3.5 align-top">
+                      <OrderThumb src={o.firstItemImageUrl} alt={o.productTitles[0] ?? o.reference} className="size-11" />
+                    </td>
                     <td className="px-5 py-3.5 align-top">
                       <p className="font-medium text-foreground">{o.reference}</p>
                     </td>

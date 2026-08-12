@@ -193,6 +193,7 @@ export interface SellerOrder {
   reference: string;
   productTitle: string;
   productId: UUID;
+  productImageUrl?: string;
   buyerName: string;
   qty: number;
   totalCents: number;

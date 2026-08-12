@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { Check, Package, ShieldCheck, Truck, Undo2 } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import { getSessionUser } from "@/lib/auth";
 import { getBuyerOrderById, getCommissionPct, getPaymentSettings, getPlatformSettings } from "@/lib/data/dashboard";
 import { daysSince } from "@/features/dashboard/order-timing";
@@ -212,9 +213,7 @@ export default async function OrderDetailPage({
             <ul className="divide-y divide-border">
               {order.items.map((it, i) => (
                 <li key={i} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                  <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
-                    <Package className="size-5" />
-                  </span>
+                  <OrderThumb src={it.imageUrl} alt={it.title} className="size-14" />
                   <div className="min-w-0 flex-1">
                     {it.productSlug ? (
                       <Link href={`/parts/${it.productSlug}`} className="font-semibold text-foreground hover:text-brand">

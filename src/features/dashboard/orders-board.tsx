@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUpDown, Search, Truck, X } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { markOrderShipped } from "@/features/dashboard/actions";
 import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
@@ -113,9 +114,10 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
         <span className="shrink-0 text-xs text-muted-foreground">{visibleOrders.length} of {orders.length} orders</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-[920px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="px-5 py-3 font-medium">Image</th>
               <th className="px-5 py-3 font-medium">Order</th>
               <th className="px-5 py-3 font-medium">Date</th>
               <th className="px-5 py-3 font-medium">Product</th>
@@ -127,15 +129,18 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
           </thead>
           <tbody className="divide-y divide-border">
             {orders.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
+              <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">No orders yet.</td></tr>
             )}
             {orders.length > 0 && visibleOrders.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
+              <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">No orders match your search.</td></tr>
             )}
             {visibleOrders.map((o) => {
               const meta = ORDER_STATUS_META[o.status];
               return (
                 <tr key={o.id} className="hover:bg-neutral-50">
+                  <td className="px-5 py-3">
+                    <OrderThumb src={o.productImageUrl} alt={o.productTitle} className="size-12" />
+                  </td>
                   <td className="px-5 py-3">
                     <p className="font-medium text-foreground">{o.reference}</p>
                     {o.tracking && (

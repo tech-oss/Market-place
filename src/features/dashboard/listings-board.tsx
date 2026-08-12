@@ -11,6 +11,7 @@ import { NewListingDialog } from "@/features/dashboard/new-listing-dialog";
 import { EditListingDialog } from "@/features/dashboard/edit-listing-dialog";
 import { archiveListing, createListing, deleteListingPermanently, updateListing } from "@/features/dashboard/actions";
 import { exportInventoryToExcel } from "@/features/dashboard/export-inventory";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import type { SellerListing } from "@/types";
 import type { BikeMake, BikeModel, CatalogCategory } from "@/lib/data/products";
 
@@ -111,9 +112,10 @@ export function ListingsBoard({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-[880px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-5 py-3 font-medium">Image</th>
                 <th className="px-5 py-3 font-medium">Product</th>
                 <th className="px-5 py-3 font-medium">Item #</th>
                 <th className="px-5 py-3 font-medium">Price</th>
@@ -126,12 +128,15 @@ export function ListingsBoard({
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet — add your first part." : "No listings match your search."}</td></tr>
+                <tr><td colSpan={9} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet — add your first part." : "No listings match your search."}</td></tr>
               )}
               {filtered.map((l) => {
                 const meta = LISTING_STATUS_META[l.status];
                 return (
                   <tr key={l.id} className="hover:bg-neutral-50">
+                    <td className="px-5 py-3">
+                      <OrderThumb src={l.images?.[0]?.url} alt={l.title} className="size-12" />
+                    </td>
                     <td className="px-5 py-3">
                       <p className="font-medium text-foreground">{l.title}</p>
                       <p className="text-xs text-muted-foreground">{l.sku}</p>

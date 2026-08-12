@@ -133,14 +133,18 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
 
   const { data } = await supabase
     .from("order_items")
-    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status)")
+    .select("qty, price_cents, title, product_id, product:products(product_images(url, position)), orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status)")
     .eq("seller_id", seller.id);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   return (data ?? []).map((row: any) => {
     const o = Array.isArray(row.orders) ? row.orders[0] : row.orders;
+    const product = Array.isArray(row.product) ? row.product[0] : row.product;
+    const images = (product?.product_images ?? []) as { url: string; position: number }[];
+    const firstImage = [...images].sort((a, b) => a.position - b.position)[0];
     return {
       id: o?.id, reference: o?.reference, productTitle: row.title, productId: row.product_id,
+      productImageUrl: firstImage?.url ?? undefined,
       buyerName: o?.buyer_name ?? "Buyer", qty: row.qty, totalCents: row.price_cents * row.qty,
       status: o?.status, courier: o?.courier ?? undefined, tracking: o?.tracking ?? undefined,
       shippingService: o?.shipping_service ?? undefined, shippingNote: o?.shipping_note ?? undefined,
@@ -214,7 +218,7 @@ export interface BuyerOrderView {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paymentDeadline?: string;
-  items: { title: string; productSlug: string | null; qty: number; priceCents: number }[];
+  items: { title: string; productSlug: string | null; imageUrl?: string; qty: number; priceCents: number }[];
 }
 
 /** The signed-in buyer's own orders (My Account → Recent Orders). */
@@ -226,7 +230,7 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
 
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, status, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, payment_method, payment_status, payment_deadline, order_items(title, qty, price_cents, product:products(slug))")
+    .select("id, reference, status, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, payment_method, payment_status, payment_deadline, order_items(title, qty, price_cents, product:products(slug, product_images(url, position)))")
     .eq("buyer_id", user.id)
     .order("placed_at", { ascending: false });
 
@@ -246,7 +250,9 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
     paymentDeadline: o.payment_deadline ?? undefined,
     items: (o.order_items ?? []).map((it: any) => {
       const prod = Array.isArray(it.product) ? it.product[0] : it.product;
-      return { title: it.title, productSlug: prod?.slug ?? null, qty: it.qty, priceCents: it.price_cents };
+      const images = (prod?.product_images ?? []) as { url: string; position: number }[];
+      const firstImage = [...images].sort((a, b) => a.position - b.position)[0];
+      return { title: it.title, productSlug: prod?.slug ?? null, imageUrl: firstImage?.url ?? undefined, qty: it.qty, priceCents: it.price_cents };
     }),
   }));
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -279,7 +285,7 @@ export interface BuyerOrderDetail {
     city: string | null;
     postalCode: string | null;
   };
-  items: { title: string; productSlug: string | null; sellerName: string | null; qty: number; priceCents: number }[];
+  items: { title: string; productSlug: string | null; imageUrl?: string; sellerName: string | null; qty: number; priceCents: number }[];
 }
 
 /** A single order belonging to the signed-in buyer, for the order detail page. Null if it isn't theirs. */
@@ -292,7 +298,7 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
+      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug, product_images(url, position)), seller:sellers(name))",
     )
     .eq("id", id)
     .eq("buyer_id", user.id)
@@ -328,7 +334,9 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
     items: (d.order_items ?? []).map((it: any) => {
       const prod = Array.isArray(it.product) ? it.product[0] : it.product;
       const seller = Array.isArray(it.seller) ? it.seller[0] : it.seller;
-      return { title: it.title, productSlug: prod?.slug ?? null, sellerName: seller?.name ?? null, qty: it.qty, priceCents: it.price_cents };
+      const images = (prod?.product_images ?? []) as { url: string; position: number }[];
+      const firstImage = [...images].sort((a, b) => a.position - b.position)[0];
+      return { title: it.title, productSlug: prod?.slug ?? null, imageUrl: firstImage?.url ?? undefined, sellerName: seller?.name ?? null, qty: it.qty, priceCents: it.price_cents };
     }),
   };
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -398,6 +406,7 @@ export interface AdminOrderView {
   paymentDeadline?: string;
   paymentProofUrl?: string;
   productTitles: string[];
+  firstItemImageUrl?: string;
 }
 
 /**
@@ -423,6 +432,7 @@ export interface AdminListingView {
   status: string;
   itemNumber: string;
   sku: string;
+  imageUrl?: string;
 }
 
 /** Admin: every listing regardless of status, for moderation. */
@@ -433,24 +443,27 @@ export async function getAdminListings(): Promise<AdminListingView[]> {
     return allProducts.map((p, i) => ({
       id: p.id, slug: p.slug, title: p.title, brandName: p.brandName, sellerName: p.seller.name,
       condition: p.condition, priceCents: p.priceCents, status: "active",
-      itemNumber: `MP-${100000 + i + 1}`, sku: "—",
+      itemNumber: `MP-${100000 + i + 1}`, sku: "—", imageUrl: p.images?.[0]?.url,
     }));
   }
 
   const { data } = await supabase
     .from("products")
-    .select("id, slug, title, brand_name, condition, price_cents, status, item_number, sku, sellers(name)")
+    .select("id, slug, title, brand_name, condition, price_cents, status, item_number, sku, sellers(name), product_images(url, position)")
     .order("created_at", { ascending: false });
   if (!data) return [];
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   return data.map((p: any) => {
     const sellerObj = Array.isArray(p.sellers) ? p.sellers[0] : p.sellers;
+    const images = (p.product_images ?? []) as { url: string; position: number }[];
+    const firstImage = [...images].sort((a, b) => a.position - b.position)[0];
     return {
       id: p.id, slug: p.slug ?? "", title: p.title, brandName: p.brand_name ?? "—",
       sellerName: sellerObj?.name ?? "—", condition: p.condition,
       priceCents: p.price_cents, status: p.status,
       itemNumber: p.item_number ?? "—", sku: p.sku ?? "—",
+      imageUrl: firstImage?.url ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -677,13 +690,16 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, order_items(seller_id, title, sellers(name))")
+    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, order_items(seller_id, title, sellers(name), product:products(product_images(url, position)))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
   return data.map((o: any) => {
     const firstItem = o.order_items?.[0];
     const sellerObj = Array.isArray(firstItem?.sellers) ? firstItem.sellers[0] : firstItem?.sellers;
+    const firstProduct = Array.isArray(firstItem?.product) ? firstItem.product[0] : firstItem?.product;
+    const firstImages = (firstProduct?.product_images ?? []) as { url: string; position: number }[];
+    const firstItemImageUrl = [...firstImages].sort((a, b) => a.position - b.position)[0]?.url ?? undefined;
     return {
       id: o.id, reference: o.reference, seller: sellerObj?.name ?? "—",
       buyer: o.buyer_name ?? "—",
@@ -703,6 +719,7 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       paymentDeadline: o.payment_deadline ?? undefined,
       paymentProofUrl: o.payment_proof_url ?? undefined,
       productTitles: (o.order_items ?? []).map((it: any) => it.title as string),
+      firstItemImageUrl,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */

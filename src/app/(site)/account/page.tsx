@@ -5,6 +5,7 @@ import { ArrowRight, LayoutDashboard, Package, ShieldCheck, Store } from "lucide
 import { Container } from "@/components/shared/container";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import { formatZAR } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
 import { getBuyerOrders, getCommissionPct, getPaymentSettings } from "@/lib/data/dashboard";
@@ -80,9 +81,7 @@ export default async function AccountPage() {
                           href={`/account/orders/${order.id}`}
                           className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-brand/40 hover:bg-brand/5"
                         >
-                          <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
-                            <Package className="size-6" />
-                          </span>
+                          <OrderThumb src={first?.imageUrl} alt={first?.title ?? "Item"} className="size-16" />
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Order {order.reference} · {date}</p>
                             <span className="font-semibold text-foreground">{first?.title ?? "Item"}</span>

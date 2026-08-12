@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { conditionLabel } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
+import { OrderThumb } from "@/components/shared/order-thumb";
 import { LISTING_STATUS_META } from "@/features/dashboard/status";
 import { removeListing } from "@/features/dashboard/actions";
 import type { AdminListingView } from "@/lib/data/dashboard";
@@ -53,9 +54,10 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
         <span className="shrink-0 text-xs text-muted-foreground">{filtered.length} items</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-[920px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="px-5 py-3 font-medium">Image</th>
               <th className="px-5 py-3 font-medium">Product</th>
               <th className="px-5 py-3 font-medium">Item #</th>
               <th className="px-5 py-3 font-medium">Seller</th>
@@ -67,12 +69,15 @@ export function AdminListingsBoard({ initial, live }: { initial: AdminListingVie
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet." : "No listings match your search."}</td></tr>
+              <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground">{listings.length === 0 ? "No listings yet." : "No listings match your search."}</td></tr>
             )}
             {filtered.map((p) => {
               const meta = LISTING_STATUS_META[p.status as ListingStatus] ?? { label: p.status, tone: "gray" as const };
               return (
                 <tr key={p.id} className="hover:bg-neutral-50">
+                  <td className="px-5 py-3">
+                    <OrderThumb src={p.imageUrl} alt={p.title} className="size-12" />
+                  </td>
                   <td className="px-5 py-3">
                     <p className="font-medium text-foreground">{p.title}</p>
                     <p className="text-xs text-muted-foreground">{p.brandName} · {p.sku}</p>
