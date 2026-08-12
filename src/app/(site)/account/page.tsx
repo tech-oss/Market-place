@@ -7,8 +7,9 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatZAR } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
-import { getBuyerOrders, getCommissionPct } from "@/lib/data/dashboard";
+import { getBuyerOrders, getCommissionPct, getPaymentSettings } from "@/lib/data/dashboard";
 import { AccountSidebar } from "@/features/account/account-sidebar";
+import { DoTransferButton } from "@/features/cart/do-transfer-button";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = {
@@ -36,7 +37,11 @@ export default async function AccountPage() {
   if (!user) redirect("/login?next=/account");
 
   const displayName = user.fullName || user.email || "Rider";
-  const [orders, commissionPct] = await Promise.all([getBuyerOrders(), getCommissionPct()]);
+  const [orders, commissionPct, paymentSettings] = await Promise.all([
+    getBuyerOrders(),
+    getCommissionPct(),
+    getPaymentSettings(),
+  ]);
 
   return (
     <>
@@ -92,10 +97,32 @@ export default async function AccountPage() {
                             {order.shippingNote && (
                               <p className="mt-0.5 text-xs text-muted-foreground">Note: {order.shippingNote}</p>
                             )}
+                            {order.paymentMethod === "eft" && order.paymentStatus !== "confirmed" && (
+                              <p className="mt-1 text-xs font-medium text-amber-800">
+                                {order.paymentStatus === "submitted"
+                                  ? "Payment proof submitted — awaiting confirmation"
+                                  : order.paymentStatus === "expired"
+                                    ? "EFT payment window expired"
+                                    : order.paymentDeadline
+                                      ? `Pay by ${new Date(order.paymentDeadline).toLocaleDateString("en-ZA", { month: "short", day: "numeric" })}`
+                                      : "Awaiting EFT payment"}
+                              </p>
+                            )}
                           </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
-                            {meta.label}
-                          </span>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.className}`}>
+                              {meta.label}
+                            </span>
+                            {order.paymentMethod === "eft" && order.paymentStatus === "pending" && (
+                              <DoTransferButton
+                                orderId={order.id}
+                                reference={order.reference}
+                                totalCents={order.totalCents}
+                                deadline={order.paymentDeadline}
+                                settings={paymentSettings}
+                              />
+                            )}
+                          </div>
                         </Link>
                       </li>
                     );

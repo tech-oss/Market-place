@@ -12,6 +12,8 @@ import {
 } from "@/mocks/dashboard";
 import type {
   OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
   SellerApplication,
   SellerListing,
   SellerOrder,
@@ -131,7 +133,7 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
 
   const { data } = await supabase
     .from("order_items")
-    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at, return_requested_at, return_reason, return_photo_url)")
+    .select("qty, price_cents, title, product_id, orders(id, reference, buyer_name, status, courier, tracking, shipping_service, shipping_note, shipping_cents, placed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status)")
     .eq("seller_id", seller.id);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -146,6 +148,8 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
       returnRequestedAt: o?.return_requested_at ?? undefined,
       returnReason: o?.return_reason ?? undefined,
       returnPhotoUrl: o?.return_photo_url ?? undefined,
+      paymentMethod: (o?.payment_method ?? "online") as PaymentMethod,
+      paymentStatus: (o?.payment_status ?? "confirmed") as PaymentStatus,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -207,6 +211,9 @@ export interface BuyerOrderView {
   tracking?: string;
   shippingService?: string;
   shippingNote?: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentDeadline?: string;
   items: { title: string; productSlug: string | null; qty: number; priceCents: number }[];
 }
 
@@ -219,7 +226,7 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
 
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, status, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, order_items(title, qty, price_cents, product:products(slug))")
+    .select("id, reference, status, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, payment_method, payment_status, payment_deadline, order_items(title, qty, price_cents, product:products(slug))")
     .eq("buyer_id", user.id)
     .order("placed_at", { ascending: false });
 
@@ -234,6 +241,9 @@ export async function getBuyerOrders(): Promise<BuyerOrderView[]> {
     tracking: o.tracking ?? undefined,
     shippingService: o.shipping_service ?? undefined,
     shippingNote: o.shipping_note ?? undefined,
+    paymentMethod: (o.payment_method ?? "online") as PaymentMethod,
+    paymentStatus: (o.payment_status ?? "confirmed") as PaymentStatus,
+    paymentDeadline: o.payment_deadline ?? undefined,
     items: (o.order_items ?? []).map((it: any) => {
       const prod = Array.isArray(it.product) ? it.product[0] : it.product;
       return { title: it.title, productSlug: prod?.slug ?? null, qty: it.qty, priceCents: it.price_cents };
@@ -258,6 +268,10 @@ export interface BuyerOrderDetail {
   returnRequestedAt?: string;
   returnReason?: string;
   returnPhotoUrl?: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentDeadline?: string;
+  paymentProofUrl?: string;
   shippingAddress: {
     name: string | null;
     phone: string | null;
@@ -278,7 +292,7 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
   const { data } = await supabase
     .from("orders")
     .select(
-      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, return_photo_url, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
+      "id, reference, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, shipping_note, confirmed_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, shipping_name, shipping_phone, shipping_address, shipping_city, shipping_postal_code, order_items(title, qty, price_cents, product:products(slug), seller:sellers(name))",
     )
     .eq("id", id)
     .eq("buyer_id", user.id)
@@ -303,6 +317,10 @@ export async function getBuyerOrderById(id: string): Promise<BuyerOrderDetail | 
     returnRequestedAt: d.return_requested_at ?? undefined,
     returnReason: d.return_reason ?? undefined,
     returnPhotoUrl: d.return_photo_url ?? undefined,
+    paymentMethod: (d.payment_method ?? "online") as PaymentMethod,
+    paymentStatus: (d.payment_status ?? "confirmed") as PaymentStatus,
+    paymentDeadline: d.payment_deadline ?? undefined,
+    paymentProofUrl: d.payment_proof_url ?? undefined,
     shippingAddress: {
       name: d.shipping_name, phone: d.shipping_phone, address: d.shipping_address,
       city: d.shipping_city, postalCode: d.shipping_postal_code,
@@ -375,6 +393,10 @@ export interface AdminOrderView {
   returnRequestedAt?: string;
   returnReason?: string;
   returnPhotoUrl?: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentDeadline?: string;
+  paymentProofUrl?: string;
 }
 
 /**
@@ -646,12 +668,14 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       id: o.reference,
       subtotalCents: Math.round(o.totalCents * 0.94),
       shippingCents: Math.round(o.totalCents * 0.06),
+      paymentMethod: "online" as PaymentMethod,
+      paymentStatus: "confirmed" as PaymentStatus,
       ...o,
     }));
   }
   const { data } = await supabase
     .from("orders")
-    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, order_items(seller_id, sellers(name))")
+    .select("id, reference, buyer_name, status, subtotal_cents, shipping_cents, total_cents, placed_at, courier, tracking, shipping_service, confirmed_at, released_at, return_requested_at, return_reason, return_photo_url, payment_method, payment_status, payment_deadline, payment_proof_url, order_items(seller_id, sellers(name))")
     .order("placed_at", { ascending: false });
   if (!data) return [];
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -672,9 +696,57 @@ export async function getAdminOrders(): Promise<AdminOrderView[]> {
       returnRequestedAt: o.return_requested_at ?? undefined,
       returnReason: o.return_reason ?? undefined,
       returnPhotoUrl: o.return_photo_url ?? undefined,
+      paymentMethod: (o.payment_method ?? "online") as PaymentMethod,
+      paymentStatus: (o.payment_status ?? "confirmed") as PaymentStatus,
+      paymentDeadline: o.payment_deadline ?? undefined,
+      paymentProofUrl: o.payment_proof_url ?? undefined,
     };
   });
   /* eslint-enable @typescript-eslint/no-explicit-any */
+}
+
+export interface PaymentSettings {
+  onlineEnabled: boolean;
+  eftEnabled: boolean;
+  bankName: string;
+  accountTitle: string;
+  accountNumber: string;
+  branchCode: string;
+  iban: string;
+  eftInstructions: string;
+}
+
+const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
+  onlineEnabled: true,
+  eftEnabled: true,
+  bankName: "",
+  accountTitle: "",
+  accountNumber: "",
+  branchCode: "",
+  iban: "",
+  eftInstructions: "",
+};
+
+/** Admin-configured payment methods (Online / EFT) + the EFT bank details shown to buyers. */
+export async function getPaymentSettings(): Promise<PaymentSettings> {
+  const supabase = await createClient();
+  if (!supabase) return DEFAULT_PAYMENT_SETTINGS;
+  const { data } = await supabase
+    .from("payment_settings")
+    .select("online_enabled, eft_enabled, bank_name, account_title, account_number, branch_code, iban, eft_instructions")
+    .eq("id", 1)
+    .maybeSingle();
+  if (!data) return DEFAULT_PAYMENT_SETTINGS;
+  return {
+    onlineEnabled: data.online_enabled ?? true,
+    eftEnabled: data.eft_enabled ?? true,
+    bankName: data.bank_name ?? "",
+    accountTitle: data.account_title ?? "",
+    accountNumber: data.account_number ?? "",
+    branchCode: data.branch_code ?? "",
+    iban: data.iban ?? "",
+    eftInstructions: data.eft_instructions ?? "",
+  };
 }
 
 export interface PlatformSettings {

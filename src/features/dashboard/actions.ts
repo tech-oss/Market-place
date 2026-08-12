@@ -456,6 +456,123 @@ export async function getKycSignedUrl(path: string): Promise<{ url?: string; err
   return { url: data.signedUrl };
 }
 
+/** Admin: get a short-lived signed URL to view a buyer's uploaded EFT payment proof. */
+export async function getPaymentProofSignedUrl(path: string): Promise<{ url?: string; error?: string }> {
+  const supabase = await createClient();
+  if (!supabase) return { error: "Not connected." };
+  const { data, error } = await supabase.storage
+    .from("payment-proofs")
+    .createSignedUrl(path, 60);
+  if (error) return { error: error.message };
+  return { url: data.signedUrl };
+}
+
+/**
+ * Admin: confirm a buyer's EFT payment. Moves the order into the same
+ * "paid-held" state an online payment starts in, so shipping / delivery /
+ * release all flow through the existing order machinery unchanged — the
+ * seller's Ship Now button (gated on status === "paid-held") activates
+ * automatically.
+ */
+export async function confirmEftPayment(orderId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: order } = await supabase
+    .from("orders").select("id,payment_method,status").eq("id", orderId).maybeSingle();
+  if (!order) return { ok: false, error: "Order not found." };
+  if (order.payment_method !== "eft") return { ok: false, error: "This order isn't an EFT order." };
+  if (order.status !== "pending-payment") return { ok: true };
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "paid-held",
+      payment_status: "confirmed",
+      payment_confirmed_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/account");
+  revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/**
+ * Admin: cancel an unpaid/unconfirmed EFT order and restore reserved stock —
+ * used when the buyer's transfer never arrives or proof turns out invalid,
+ * without waiting for the 3-day auto-expiry.
+ */
+export async function cancelEftOrder(orderId: string, reason?: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+
+  const { data: order } = await supabase
+    .from("orders").select("id,payment_method,status").eq("id", orderId).maybeSingle();
+  if (!order) return { ok: false, error: "Order not found." };
+  if (order.payment_method !== "eft") return { ok: false, error: "This order isn't an EFT order." };
+  if (order.status !== "pending-payment") return { ok: false, error: "This order is no longer awaiting payment." };
+
+  const { data: items } = await supabase
+    .from("order_items").select("product_id,qty").eq("order_id", orderId);
+  for (const it of items ?? []) {
+    if (it.product_id) await supabase.rpc("increment_product_stock", { p_id: it.product_id, p_qty: it.qty });
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      status: "cancelled",
+      payment_status: "expired",
+      cancelled_at: new Date().toISOString(),
+      cancel_reason: reason?.trim() || "Cancelled by admin",
+    })
+    .eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/account");
+  revalidatePath("/seller/orders");
+  return { ok: true };
+}
+
+/** Admin: enable/disable payment methods and set the EFT bank details shown to buyers. */
+export async function updatePaymentSettings(input: {
+  onlineEnabled: boolean;
+  eftEnabled: boolean;
+  bankName: string;
+  accountTitle: string;
+  accountNumber: string;
+  branchCode: string;
+  iban: string;
+  eftInstructions: string;
+}): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONNECTED;
+  const { error } = await supabase
+    .from("payment_settings")
+    .update({
+      online_enabled: input.onlineEnabled,
+      eft_enabled: input.eftEnabled,
+      bank_name: input.bankName || null,
+      account_title: input.accountTitle || null,
+      account_number: input.accountNumber || null,
+      branch_code: input.branchCode || null,
+      iban: input.iban || null,
+      eft_instructions: input.eftInstructions || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/settings");
+  revalidatePath("/checkout");
+  return { ok: true };
+}
+
 const SETTLED_STATUSES = ["released", "refunded", "returned"];
 
 /**

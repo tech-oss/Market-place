@@ -42,6 +42,14 @@ export type OrderStatus =
   | "refunded"
   | "cancelled";
 
+export type PaymentMethod = "online" | "eft";
+
+/** "pending" until the buyer transfers, "submitted" once proof is uploaded and
+ *  awaiting admin review, "confirmed" once admin verifies, "expired" if the
+ *  3-day EFT deadline passed without confirmation. Online payments are
+ *  "confirmed" immediately (the existing simulated flow is unchanged). */
+export type PaymentStatus = "pending" | "submitted" | "confirmed" | "expired";
+
 /** ---------------------------------------------------------------------------
  * Vehicle / fitment
  * ------------------------------------------------------------------------- */
@@ -197,6 +205,8 @@ export interface SellerOrder {
   returnRequestedAt?: string;
   returnReason?: string;
   returnPhotoUrl?: string;
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
 }
 
 export type WalletTxnType = "sale" | "commission" | "payout" | "refund";

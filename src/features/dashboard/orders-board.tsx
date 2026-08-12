@@ -116,7 +116,12 @@ export function SellerOrdersBoard({ initial, live, commissionPct }: { initial: S
                   <td className="px-5 py-3 text-muted-foreground">{o.productTitle} × {o.qty}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.buyerName}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{formatZAR(o.totalCents)}</td>
-                  <td className="px-5 py-3"><StatusPill label={meta.label} tone={meta.tone} /></td>
+                  <td className="px-5 py-3">
+                    <StatusPill label={meta.label} tone={meta.tone} />
+                    {o.status === "pending-payment" && o.paymentMethod === "eft" && (
+                      <p className="mt-1 text-[11px] text-muted-foreground">Waiting on buyer's EFT payment — Ship unlocks once admin confirms.</p>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex flex-col items-end gap-1.5">
                       {o.status === "paid-held" && (

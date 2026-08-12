@@ -16,9 +16,12 @@ export interface PlaceOrderResult {
   ok: boolean;
   error?: string;
   reference?: string;
+  orderId?: string;
   /** True when Supabase isn't connected / user not signed in — UI shows demo confirmation. */
   fellBack?: boolean;
 }
+
+const EFT_DEADLINE_DAYS = 3;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -39,6 +42,7 @@ export async function placeOrder(input: {
   lines: OrderLineInput[];
   shippingCents: number;
   shippingAddress: ShippingAddressInput;
+  paymentMethod: "online" | "eft";
 }): Promise<PlaceOrderResult> {
   const supabase = await createClient();
   if (!supabase) return { ok: true, fellBack: true };
@@ -74,13 +78,14 @@ export async function placeOrder(input: {
     }
   };
 
+  const isEft = input.paymentMethod === "eft";
   const { data: order, error } = await supabase
     .from("orders")
     .insert({
       reference,
       buyer_id: user.id,
       buyer_name: profile?.full_name || profile?.email || "Buyer",
-      status: "paid-held",
+      status: isEft ? "pending-payment" : "paid-held",
       subtotal_cents: subtotal,
       shipping_cents: input.shippingCents,
       total_cents: subtotal + input.shippingCents,
@@ -89,6 +94,11 @@ export async function placeOrder(input: {
       shipping_address: input.shippingAddress.address,
       shipping_city: input.shippingAddress.city,
       shipping_postal_code: input.shippingAddress.postalCode,
+      payment_method: input.paymentMethod,
+      payment_status: isEft ? "pending" : "confirmed",
+      payment_deadline: isEft
+        ? new Date(Date.now() + EFT_DEADLINE_DAYS * 86_400_000).toISOString()
+        : null,
     })
     .select("id")
     .single();
@@ -114,7 +124,46 @@ export async function placeOrder(input: {
     return { ok: false, error: "Could not place your order. Please try again." };
   }
 
-  return { ok: true, reference };
+  return { ok: true, reference, orderId: order.id };
+}
+
+/**
+ * Buyer: attach uploaded proof of an EFT transfer to their order. Moves
+ * payment_status to "submitted" — an admin then reviews and confirms it
+ * (see confirmEftPayment in dashboard/actions.ts). Resubmitting (e.g. the
+ * buyer uploaded the wrong file) is allowed as long as an admin hasn't
+ * confirmed payment yet.
+ */
+export async function submitPaymentProof(orderId: string, proofUrl: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: true, fellBack: true };
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Please sign in again." };
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id,buyer_id,payment_method,payment_status")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order || order.buyer_id !== user.id) return { ok: false, error: "Order not found." };
+  if (order.payment_method !== "eft") return { ok: false, error: "This order isn't an EFT order." };
+  if (order.payment_status === "confirmed") return { ok: false, error: "Payment for this order is already confirmed." };
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      payment_status: "submitted",
+      payment_proof_url: proofUrl,
+      payment_proof_uploaded_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/account");
+  revalidatePath(`/account/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  return { ok: true };
 }
 
 /**

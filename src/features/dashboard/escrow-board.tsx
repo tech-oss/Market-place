@@ -2,15 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, PackageCheck, Truck } from "lucide-react";
+import { AlertTriangle, Banknote, FileText, PackageCheck, Truck } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 import { SectionCard, StatusPill } from "@/features/dashboard/ui";
-import { processReturn, settleOrder } from "@/features/dashboard/actions";
+import { cancelEftOrder, confirmEftPayment, getPaymentProofSignedUrl, processReturn, settleOrder } from "@/features/dashboard/actions";
 import { InvoiceDialog } from "@/features/dashboard/invoice-dialog";
 import { ORDER_STATUS_META } from "@/features/dashboard/status";
 import { daysSince, isReleaseOverdue } from "@/features/dashboard/order-timing";
 import type { AdminOrderView } from "@/lib/data/dashboard";
 import type { OrderStatus } from "@/types";
+
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pending: "Awaiting transfer",
+  submitted: "Awaiting verification",
+  confirmed: "Confirmed",
+  expired: "Expired",
+};
 
 const ESCROW_TONE = { held: "blue", released: "green", refunded: "gray" } as const;
 const ESCROW_LABEL = { held: "On hold", released: "Released", refunded: "Refunded" } as const;
@@ -37,6 +44,28 @@ export function EscrowBoard({
   const [orders, setOrders] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<AdminOrderView | null>(null);
+
+  const confirmEft = async (id: string) => {
+    if (!window.confirm("Confirm this EFT payment was received? The order moves to Awaiting Shipment and the seller's Ship Now button activates.")) return;
+    setBusy(id);
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "paid-held" as OrderStatus, paymentStatus: "confirmed" } : o)));
+    if (live) { const res = await confirmEftPayment(id); if (res.ok && !res.fellBack) router.refresh(); }
+    setBusy(null);
+  };
+
+  const cancelEft = async (id: string) => {
+    if (!window.confirm("Cancel this EFT order? Reserved stock is restored to the seller and the buyer is notified.")) return;
+    setBusy(id);
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "cancelled" as OrderStatus, paymentStatus: "expired" } : o)));
+    if (live) { const res = await cancelEftOrder(id); if (res.ok && !res.fellBack) router.refresh(); }
+    setBusy(null);
+  };
+
+  const viewProof = async (path: string) => {
+    if (!live) return;
+    const res = await getPaymentProofSignedUrl(path);
+    if (res.url) window.open(res.url, "_blank", "noopener,noreferrer");
+  };
 
   const act = async (id: string, outcome: "released" | "refunded") => {
     const verb = outcome === "released" ? "Release payment to the seller" : "Refund the buyer";
@@ -186,11 +215,42 @@ export function EscrowBoard({
                           {isOverdue ? " — review payout" : ""}
                         </p>
                       )}
+                      {o.paymentMethod === "eft" && (
+                        <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-amber-800">
+                          <Banknote className="size-3 shrink-0" /> EFT · {PAYMENT_STATUS_LABEL[o.paymentStatus] ?? o.paymentStatus}
+                        </div>
+                      )}
+                      {o.paymentMethod === "eft" && o.paymentProofUrl && (
+                        <button
+                          type="button"
+                          onClick={() => viewProof(o.paymentProofUrl!)}
+                          className="mt-1 flex items-center gap-1 text-[11px] font-medium text-brand hover:underline"
+                        >
+                          <FileText className="size-3 shrink-0" /> View proof
+                        </button>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 align-top"><StatusPill label={o.escrow} tone={ESCROW_TONE[o.escrow]} /></td>
                     <td className="px-5 py-3.5 align-top text-right">
                       <div className="flex flex-col items-stretch gap-1.5">
-                        {o.status === "return-requested" ? (
+                        {o.status === "pending-payment" && o.paymentMethod === "eft" ? (
+                          <>
+                            <button
+                              onClick={() => confirmEft(o.id)}
+                              disabled={busy === o.id}
+                              className="whitespace-nowrap rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90 disabled:opacity-60"
+                            >
+                              Confirm Payment Received
+                            </button>
+                            <button
+                              onClick={() => cancelEft(o.id)}
+                              disabled={busy === o.id}
+                              className="whitespace-nowrap rounded-lg border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                            >
+                              Cancel order
+                            </button>
+                          </>
+                        ) : o.status === "return-requested" ? (
                           <button
                             onClick={() => completeReturn(o.id)}
                             disabled={busy === o.id}

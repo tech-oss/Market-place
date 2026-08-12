@@ -5,12 +5,13 @@ import { Check, Package, ShieldCheck, Truck, Undo2 } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { getSessionUser } from "@/lib/auth";
-import { getBuyerOrderById, getCommissionPct, getPlatformSettings } from "@/lib/data/dashboard";
+import { getBuyerOrderById, getCommissionPct, getPaymentSettings, getPlatformSettings } from "@/lib/data/dashboard";
 import { daysSince } from "@/features/dashboard/order-timing";
 import { formatZAR } from "@/lib/format";
 import { ConfirmDeliveryButton } from "@/features/cart/confirm-delivery-button";
 import { RequestReturnButton } from "@/features/cart/request-return-button";
 import { TrackShippingModal } from "@/features/cart/track-shipping-modal";
+import { DoTransferButton } from "@/features/cart/do-transfer-button";
 import type { OrderStatus } from "@/types";
 
 export const metadata: Metadata = { title: "Order Details", robots: { index: false } };
@@ -31,10 +32,11 @@ export default async function OrderDetailPage({
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=/account/orders/${id}`);
 
-  const [order, settings, commissionPct] = await Promise.all([
+  const [order, settings, commissionPct, paymentSettings] = await Promise.all([
     getBuyerOrderById(id),
     getPlatformSettings(),
     getCommissionPct(),
+    getPaymentSettings(),
   ]);
   if (!order) notFound();
 
@@ -43,6 +45,7 @@ export default async function OrderDetailPage({
   const received = RECEIVED_OR_LATER.includes(order.status);
   const terminal = TERMINAL_META[order.status];
   const returning = order.status === "return-requested";
+  const pendingEft = order.paymentMethod === "eft" && order.status === "pending-payment";
 
   // The buyer can return inside the platform's window, counted from the day
   // they confirmed the part arrived.
@@ -84,8 +87,37 @@ export default async function OrderDetailPage({
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">
+          {/* EFT payment status */}
+          {pendingEft && (
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <h2 className="text-lg font-bold text-amber-900">
+                {order.paymentStatus === "submitted" ? "Payment proof submitted" : "Awaiting your EFT payment"}
+              </h2>
+              <p className="mt-2 text-sm text-amber-800">
+                {order.paymentStatus === "submitted"
+                  ? "We've received your proof of payment and it's awaiting admin confirmation. The seller will ship once payment is confirmed."
+                  : "Your items are reserved. Transfer the total using the bank details below, then upload your proof of payment."}
+              </p>
+              {order.paymentDeadline && (
+                <p className="mt-1 text-xs font-medium text-amber-900">
+                  Payment deadline: {new Date(order.paymentDeadline).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" })}
+                </p>
+              )}
+              <div className="mt-4">
+                <DoTransferButton
+                  orderId={order.id}
+                  reference={order.reference}
+                  totalCents={order.totalCents}
+                  deadline={order.paymentDeadline}
+                  settings={paymentSettings}
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground hover:opacity-90"
+                />
+              </div>
+            </section>
+          )}
+
           {/* Status timeline */}
-          {!terminal && (
+          {!terminal && !pendingEft && (
             <section className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-4 text-lg font-bold text-foreground">Status</h2>
               <ol className="space-y-4">
