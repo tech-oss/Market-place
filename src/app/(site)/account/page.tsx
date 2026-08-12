@@ -78,7 +78,7 @@ export default async function AccountPage() {
                       <li key={order.id}>
                         <Link
                           href={`/account/orders/${order.id}`}
-                          className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-neutral-300"
+                          className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-brand/40 hover:bg-brand/5"
                         >
                           <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
                             <Package className="size-6" />
